@@ -59,7 +59,7 @@ const StockOperationDialog: React.FC<StockOperationDialogProps> = ({
       case "complete":
         actionName = "COMPLETE";
         break;
-      case "completedispatch":
+      case "complete dispatch":
         actionName = "COMPLETE";
         break;
       case "cancel":
@@ -88,7 +88,6 @@ const StockOperationDialog: React.FC<StockOperationDialogProps> = ({
       uuid: operation?.uuid,
       reason: notes,
     };
-
     // submit action
     executeStockOperationAction(payload).then(
       () => {
