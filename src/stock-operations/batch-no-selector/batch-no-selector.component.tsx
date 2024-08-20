@@ -5,6 +5,7 @@ import { useStockItemBatchNos } from "./batch-no-selector.resource";
 import { StockBatchDTO } from "../../core/api/types/stockItem/StockBatchDTO";
 import { useStockItemBatchInformationHook } from "../../stock-items/add-stock-item/batch-information/batch-information.resource";
 import { ResourceRepresentation } from "../../core/api/api";
+import { formatDisplayDate } from "../../core/utils/datetimeUtils";
 
 interface BatchNoSelectorProps<T> {
   placeholder?: string;
@@ -47,6 +48,8 @@ const BatchNoSelector = <T,>(props: BatchNoSelectorProps<T>) => {
       return {
         ...item,
         quantity: matchingBatch.quantity ?? "",
+        quantityFactor: matchingBatch.quantityFactor ?? "",
+        quantityUoM: matchingBatch.quantityUoM ?? "",
       };
     }
     return item;
@@ -82,7 +85,13 @@ const BatchNoSelector = <T,>(props: BatchNoSelectorProps<T>) => {
             }}
             initialSelectedItem={initialSelectedItem}
             itemToString={(s: StockBatchDTO) =>
-              s?.batchNo ? `${s?.batchNo} | Qty: ${s?.quantity ?? ""}` : ""
+              s?.batchNo
+                ? `${s?.batchNo} (${s?.quantityUoM} - ${
+                    s?.quantityFactor
+                  }) | Qty: ${s?.quantity ?? ""} | Exp: ${
+                    formatDisplayDate(s?.expiration) ?? ""
+                  }`
+                : ""
             }
             placeholder={props.placeholder}
             invalid={props.invalid}

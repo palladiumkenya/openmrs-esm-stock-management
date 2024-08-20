@@ -4,5 +4,7 @@ export interface StockBatchDTO {
   expiration: Date;
   stockItemUuid: string;
   quantity: string;
+  quantityFactor: string;
+  quantityUoM: string;
   voided: boolean;
 }

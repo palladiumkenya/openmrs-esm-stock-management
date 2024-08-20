@@ -130,7 +130,9 @@ const StockItemsAdditionRow: React.FC<StockItemsAdditionRowProps> = ({
       }
     }
   };
-
+  const isStockItem = (obj: any): obj is StockItemDTO => {
+    return typeof obj === "object" && obj !== null && "drugName" in obj;
+  };
   return (
     <>
       {fields?.map((row, index) => {
@@ -141,28 +143,14 @@ const StockItemsAdditionRow: React.FC<StockItemsAdditionRowProps> = ({
             key={row?.uuid}
           >
             <TableCell>
-              {canEdit && row?.uuid.startsWith("new-item") && (
-                <StockItemSelector
-                  placeholder="Select an item"
-                  controllerName={`stockItems.${index}.stockItemUuid`}
-                  name={stockItemId}
-                  control={control as unknown as Control}
-                  invalid={!!errors?.stockItems?.[index]?.stockItemUuid}
-                  onStockItemChanged={(item) => {
-                    handleStockItemChange(index, item);
-                    setValue(
-                      `stockItems.${index}.packagingUnits`,
-                      item?.packagingUnits
-                    );
-                    setStockItemUuid(item?.uuid ?? "");
-                  }}
-                />
-              )}
-              {(!canEdit || !row.uuid.startsWith("new-item")) && (
-                <Link
-                  target={"_blank"}
-                  to={URL_STOCK_ITEM(row?.stockItemUuid)}
-                >{`${row?.stockItemName}`}</Link>
+              {row?.stockItemUuid && isStockItem(row?.stockItemUuid) ? (
+                <Link target={"_blank"} to={URL_STOCK_ITEM(row?.stockItemUuid)}>
+                  {row?.stockItemUuid.drugName || "No stock item name"}
+                </Link>
+              ) : (
+                <Link target={"_blank"} to={URL_STOCK_ITEM(row?.stockItemUuid)}>
+                  {row?.stockItemName || "No name available"}
+                </Link>
               )}
             </TableCell>
             {showQuantityRequested && (
