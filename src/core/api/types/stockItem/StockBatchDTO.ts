@@ -1,3 +1,5 @@
+import { StockItem } from "./StockItem";
+
 export interface StockBatchDTO {
   uuid: string;
   batchNo: string;
@@ -6,5 +8,7 @@ export interface StockBatchDTO {
   quantity: string;
   quantityFactor: string;
   quantityUoM: string;
+  packagingUomFactor?: string;
+  packagingUomName?: string;
   voided: boolean;
 }
