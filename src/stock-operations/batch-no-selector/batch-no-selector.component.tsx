@@ -1,4 +1,4 @@
-import React, { ReactNode, useEffect, useMemo } from "react";
+import React, { ReactNode, useEffect, useMemo, useState } from "react";
 import { Control, Controller, FieldValues } from "react-hook-form";
 import { ComboBox, InlineLoading } from "@carbon/react";
 import { useStockItemBatchNos } from "./batch-no-selector.resource";
@@ -6,6 +6,8 @@ import { StockBatchDTO } from "../../core/api/types/stockItem/StockBatchDTO";
 import { useStockItemBatchInformationHook } from "../../stock-items/add-stock-item/batch-information/batch-information.resource";
 import { ResourceRepresentation } from "../../core/api/api";
 import { formatDisplayDate } from "../../core/utils/datetimeUtils";
+import { StockItemInventoryFilter } from "../../stock-items/stock-items.resource";
+import { useStockItemsTransactions } from "../../stock-items/add-stock-item/transactions/transactions.resource";
 
 interface BatchNoSelectorProps<T> {
   placeholder?: string;
@@ -35,26 +37,56 @@ const BatchNoSelector = <T,>(props: BatchNoSelectorProps<T>) => {
   );
 
   const { items, setStockItemUuid } = useStockItemBatchInformationHook();
+  const [stockItemFilter, setStockItemFilter] =
+    useState<StockItemInventoryFilter>({
+      startIndex: 0,
+      v: ResourceRepresentation.Default,
+      q: null,
+      totalCount: true,
+    });
 
+  const { items: packSize } = useStockItemsTransactions(stockItemFilter);
   useEffect(() => {
     setStockItemUuid(props.stockItemUuid);
+    setStockItemFilter({
+      startIndex: 0,
+      v: ResourceRepresentation.Default,
+      totalCount: true,
+      stockItemUuid: props.stockItemUuid,
+    });
   }, [props.stockItemUuid, setStockItemUuid]);
+  const stockItemPackSize = stockItemBatchNos?.flatMap((item) => {
+    const matchingBatch = packSize?.find(
+      (batch) => batch.stockBatchNo === item.batchNo
+    );
+    return matchingBatch
+      ? [
+          {
+            packagingUomName: matchingBatch.packagingUomName ?? "",
+            packagingUomFactor: matchingBatch.packagingUomFactor ?? "",
+            batchNumber: matchingBatch.stockBatchNo,
+          },
+        ]
+      : [];
+  });
 
   const stockItemBatchesInfo = stockItemBatchNos?.map((item) => {
     const matchingBatch = items?.find(
       (batch) => batch.batchNumber === item.batchNo
     );
-    if (matchingBatch) {
-      return {
-        ...item,
-        quantity: matchingBatch.quantity ?? "",
-        quantityFactor: matchingBatch.quantityFactor ?? "",
-        quantityUoM: matchingBatch.quantityUoM ?? "",
-      };
-    }
-    return item;
-  });
+    const matchingPackSize = stockItemPackSize?.find(
+      (pack) => pack.batchNumber === item.batchNo
+    );
 
+    return {
+      ...item,
+      ...(matchingBatch && { quantity: matchingBatch.quantity ?? "" }),
+      ...(matchingPackSize && {
+        packagingUomName: matchingPackSize.packagingUomName,
+        packagingUomFactor: matchingPackSize.packagingUomFactor,
+      }),
+    };
+  });
   if (isLoading) return <InlineLoading status="active" />;
 
   return (
@@ -86,8 +118,8 @@ const BatchNoSelector = <T,>(props: BatchNoSelectorProps<T>) => {
             initialSelectedItem={initialSelectedItem}
             itemToString={(s: StockBatchDTO) =>
               s?.batchNo
-                ? `${s?.batchNo} (${s?.quantityUoM} - ${
-                    s?.quantityFactor
+                ? `${s?.batchNo} (${s?.packagingUomName ?? ""} - ${
+                    s?.packagingUomFactor ?? ""
                   }) | Qty: ${s?.quantity ?? ""} | Exp: ${
                     formatDisplayDate(s?.expiration) ?? ""
                   }`
