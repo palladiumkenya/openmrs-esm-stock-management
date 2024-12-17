@@ -3430,6 +3430,7 @@ __metadata:
     react-i18next: "npm:^11.18.6"
     react-image-annotate: "npm:^1.8.0"
     react-router-dom: "npm:^6.14.1"
+    react-to-print: "npm:^2.14.13"
     rxjs: "npm:^6.6.7"
     swc-loader: "npm:^0.2.3"
     swr: "npm:^2.2.4"
