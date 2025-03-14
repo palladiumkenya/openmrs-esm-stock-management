@@ -27,13 +27,30 @@ const StockOperationTypesSelector: React.FC<StockOperationTypesSelectorProps> = 
     return createOperationTypes?.filter((p) => uniqueApplicablePrivilegeScopes.includes(p.uuid)) || [];
   }, [createOperationTypes, userRoles]);
 
+  /** We need to duplicate the adjustment operation type to have two separate operation types i.e Negative Adjustment and Positive Adjustment
+    This is because the backend expects the quantity to be negative for negative adjustments and positive for positive adjustments
+    The hack is to make the UI work with the backend and assist the user in selecting the correct operation type  without necessarily having
+    to remember to key in a negative quantity for negative adjustments
+ **/
+  const transformedOperationTypes = useMemo(() => {
+    return filterOperationTypes.flatMap((operation) => {
+      if (operation.operationType === 'adjustment') {
+        return [
+          { ...operation, name: 'Negative Adjustment' },
+          { ...operation, name: 'Positive Adjustment' },
+        ];
+      }
+      return operation;
+    });
+  }, [filterOperationTypes]);
+
   useEffect(() => {
-    onOperationLoaded?.(filterOperationTypes);
-  }, [filterOperationTypes, onOperationLoaded]);
+    onOperationLoaded?.(transformedOperationTypes);
+  }, [transformedOperationTypes, onOperationLoaded]);
 
   if (isLoading || error) return <ButtonSkeleton />;
 
-  return filterOperationTypes && filterOperationTypes.length ? (
+  return transformedOperationTypes && transformedOperationTypes.length ? (
     <OverflowMenu
       renderIcon={() => (
         <>
@@ -53,7 +70,7 @@ const StockOperationTypesSelector: React.FC<StockOperationTypesSelectorProps> = 
         whiteSpace: 'nowrap',
       }}
     >
-      {filterOperationTypes
+      {transformedOperationTypes
         .sort((a, b) => a.name.localeCompare(b.name))
         .map((operation) => (
           <OverflowMenuItem
