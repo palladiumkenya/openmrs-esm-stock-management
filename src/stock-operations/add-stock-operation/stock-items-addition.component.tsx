@@ -63,6 +63,17 @@ const StockItemsAddition: React.FC<StockItemsAdditionProps> = ({
     }
 
     model.stockOperationItems = item?.stockItems;
+    // If the operation is a negative adjustment, we need to ensure that the quantity is negative.
+    if (
+      model.operationTypeUuid === '11111111-1111-1111-1111-111111111111' &&
+      operation.name === 'Negative Adjustment'
+    ) {
+      model.stockOperationItems = model.stockOperationItems.map((item) => ({
+        ...item,
+        quantity: item.quantity > 0 ? -item.quantity : item.quantity,
+      }));
+    }
+
     await onSave?.(model);
   };
 
