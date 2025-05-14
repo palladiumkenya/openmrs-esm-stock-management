@@ -125,6 +125,14 @@ const StockOperationForm: React.FC<StockOperationFormProps> = ({
         stockOperationType,
         stockOperationItem,
         onSave: (data) => {
+          // If the operation is a negative adjustment, we need to ensure that the quantity is negative.
+          if (
+            stockOperationType.uuid === '11111111-1111-1111-1111-111111111111' &&
+            stockOperationType.name === 'Negative Adjustment'
+          ) {
+            data.quantity = data.quantity > 0 ? -data.quantity : data.quantity;
+          }
+
           const items = (form.getValues('stockOperationItems') ?? []) as Array<BaseStockOperationItemFormData>;
           const index = items.findIndex((i) => i.uuid === data.uuid);
           if (index === -1) {
