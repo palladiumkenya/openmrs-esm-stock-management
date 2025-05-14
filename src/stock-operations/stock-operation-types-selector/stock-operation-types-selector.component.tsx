@@ -1,7 +1,7 @@
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { ButtonSkeleton, OverflowMenu, OverflowMenuItem } from '@carbon/react';
 import { OverflowMenuVertical } from '@carbon/react/icons';
 import { showSnackbar } from '@openmrs/esm-framework';
-import React, { useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { OperationType, type StockOperationType } from '../../core/api/types/stockOperation/StockOperationType';
 import { launchStockoperationAddOrEditWorkSpace } from '../stock-operation.utils';
@@ -10,6 +10,25 @@ import useFilteredOperationTypesByRoles from '../stock-operations-forms/hooks/us
 const StockOperationTypesSelector = () => {
   const { t } = useTranslation();
   const { error, isLoading, operationTypes } = useFilteredOperationTypesByRoles();
+  /** We need to duplicate the adjustment operation type to have two separate operation types i.e Negative Adjustment and Positive Adjustment
+    This is because the backend expects the quantity to be negative for negative adjustments and positive for positive adjustments
+    The hack is to make the UI work with the backend and assist the user in selecting the correct operation type  without necessarily having
+    to remember to key in a negative quantity for negative adjustments
+ **/
+
+  const transformedOperationTypes = useMemo(() => {
+    return operationTypes.flatMap((operation) => {
+      if (operation.operationType === 'adjustment') {
+        return [
+          { ...operation, name: 'Negative Adjustment' },
+
+          { ...operation, name: 'Positive Adjustment' },
+        ];
+      }
+
+      return operation;
+    });
+  }, [operationTypes]);
 
   const handleSelect = useCallback(
     (stockOperationType: StockOperationType) => {
@@ -34,7 +53,7 @@ const StockOperationTypesSelector = () => {
 
   if (error) return null;
 
-  return operationTypes && operationTypes.length ? (
+  return transformedOperationTypes && transformedOperationTypes.length ? (
     <OverflowMenu
       renderIcon={() => (
         <>
@@ -54,7 +73,7 @@ const StockOperationTypesSelector = () => {
         whiteSpace: 'nowrap',
       }}
     >
-      {operationTypes
+      {transformedOperationTypes
         .sort((a, b) => a.name.localeCompare(b.name))
         .map((operation) => (
           <OverflowMenuItem
