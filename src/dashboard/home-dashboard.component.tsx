@@ -4,7 +4,6 @@ import { useLayoutType, isDesktop, useExtensionStore, ExtensionSlot, WorkspaceCo
 import DashboardView from './dashboard-view.component';
 import styles from './home-dashboard.scss';
 import { type DashboardConfig } from '../types';
-import Overlay from '../core/components/overlay/overlay.component';
 
 export default function Dashboard() {
   const params = useParams();
