@@ -51,17 +51,19 @@ const BatchInformation: React.FC<BatchInformationProps> = ({ stockItemUuid }) =>
   );
 
   const tableRows = useMemo(() => {
-    return items?.map((row, index) => ({
-      ...row,
-      id: `${row.partyUuid}${row.stockBatchUuid}${index}`,
-      key: `${row.partyUuid}${row.stockBatchUuid}${index}`,
-      uuid: `${row.partyUuid}${row.stockBatchUuid}${index}`,
-      expires: formatDisplayDate(row?.expiration),
-      location: row?.partyName,
-      quantity: row?.quantity?.toLocaleString() ?? '',
-      batch: row.batchNumber ?? '',
-      packaging: `${row.quantityUoM ?? ''} of ${row.quantityFactor ?? ''}`,
-    }));
+    return items
+      ?.filter((row) => row.quantity > 0)
+      .map((row, index) => ({
+        ...row,
+        id: `${row.partyUuid}${row.stockBatchUuid}${index}`,
+        key: `${row.partyUuid}${row.stockBatchUuid}${index}`,
+        uuid: `${row.partyUuid}${row.stockBatchUuid}${index}`,
+        expires: formatDisplayDate(row?.expiration),
+        location: row?.partyName,
+        quantity: row?.quantity?.toLocaleString() ?? '',
+        batch: row.batchNumber ?? '',
+        packaging: `${row.quantityUoM ?? ''} of ${row.quantityFactor ?? ''}`,
+      }));
   }, [items]);
 
   if (isLoading) {
