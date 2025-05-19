@@ -1,4 +1,4 @@
-name: OpenMRS CI
+name: Node CI
 
 on:
   push:
@@ -17,12 +17,13 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
       - name: 🟢 Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: "18.x"
           registry-url: "https://registry.npmjs.org"
 
       - name: 💾 Cache dependencies
@@ -53,10 +54,14 @@ jobs:
             dist
           overwrite: true
 
+
+
   pre_release:
     runs-on: ubuntu-latest
     needs: build
+
     if: ${{ github.event_name == 'push' }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -66,7 +71,7 @@ jobs:
       - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: "18.x"
           registry-url: "https://registry.npmjs.org"
 
       - name: 💾 Cache dependencies
@@ -110,8 +115,11 @@ jobs:
 
   release:
     runs-on: ubuntu-latest
+
     needs: build
+
     if: ${{ github.event_name == 'release' }}
+
     steps:
       - uses: actions/checkout@v4
       - name: 📥 Download Artifacts
@@ -119,7 +127,7 @@ jobs:
       - name: 🟢 Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: "18.x"
           registry-url: "https://registry.npmjs.org"
 
       - name: 💾 Cache dependencies
@@ -134,29 +142,7 @@ jobs:
         run: yarn install --immutable
 
       - run: yarn turbo run build --color
-      - name: 🚢 Publish to NPM
-        run: yarn config set npmAuthToken "${NODE_AUTH_TOKEN}" && yarn npm publish --access public
+      - name: 🚢 Publish
+        run: yarn run ci:publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
-
-      - name: 📤 Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist
-          path: |
-            dist
-          overwrite: true
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: pre_release
-    if: ${{ github.event_name == 'push' }}
-
-    steps:
-      - name: 🚀 Trigger RefApp Build
-        uses: fjogeleit/http-request-action@v1
-        with:
-          url: https://ci.openmrs.org/rest/api/latest/queue/O3-BF
-          method: "POST"
-          customHeaders: '{ "Authorization": "Bearer ${{ secrets.BAMBOO_TOKEN }}" }'
-
