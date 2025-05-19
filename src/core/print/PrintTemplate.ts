@@ -26,7 +26,7 @@ ${PrintCss}
 };
 
 export const GetLogoSection = async () => {
-  const config = await getConfig('@openmrs/esm-stock-management-app');
+  const config = await getConfig('@kenyaemr/esm-stock-management-app');
   const logoText = config?.logo?.name;
   let printLogoData: PrintLogoData | null = null;
   if (PRINT_LOGO) {
@@ -41,7 +41,7 @@ export const GetLogoSection = async () => {
 <div class="logo" >
     ${printLogoData ? (printLogoData.isSvg ? printLogoData.image : `<img alt='' src='${printLogoData.image}' />`) : ''}
     ${logoText ? `<span class='logo-text text'>${logoText}</span>` : ''}
-</div>    
+</div>
     `
     : '';
 };
@@ -51,6 +51,6 @@ export const GetHeaderSection = async () => {
   return `
 <div class="logo-row right">
 ${logoSection}
-</div>    
+</div>
     `;
 };
