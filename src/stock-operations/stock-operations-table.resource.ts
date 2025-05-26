@@ -2,6 +2,7 @@ import { type StockOperationFilter, useStockOperations } from './stock-operation
 import { useMemo, useState } from 'react';
 import { usePagination } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
+import { type StockOperationDTO } from '../core/api/types/stockOperation/StockOperationDTO';
 
 export function useStockOperationPages(filter: StockOperationFilter) {
   const { items, isLoading, error } = useStockOperations(filter);
@@ -9,9 +10,32 @@ export function useStockOperationPages(filter: StockOperationFilter) {
   const pageSizes = [10, 20, 30, 40, 50];
   const [currentPageSize, setPageSize] = useState(10);
 
-  const { goTo, results: paginatedItems, currentPage } = usePagination(items.results, currentPageSize);
+  const {
+    goTo,
+    results: paginatedItems,
+    currentPage,
+  } = usePagination<StockOperationDTO>(transformOperations(items?.results), currentPageSize);
 
   const { t } = useTranslation();
+  /**
+   * Updates operationTypeName for adjustment operations based on item quantities and operationTypeUuid.
+   * - Negative Adjustment if quantity < 0
+   * - Positive Adjustment if quantity > 0
+   */
+  function transformOperations(data) {
+    return data?.map((operation) => {
+      if (operation.operationTypeUuid?.trim() === '11111111-1111-1111-1111-111111111111') {
+        const hasNegative = operation.stockOperationItems.some((item) => item.quantity < 0);
+        const hasPositive = operation.stockOperationItems.some((item) => item.quantity > 0);
+        if (hasNegative && !hasPositive) {
+          return { ...operation, operationTypeName: 'Negative Adjustment' };
+        } else if (hasPositive && !hasNegative) {
+          return { ...operation, operationTypeName: 'Positive Adjustment' };
+        }
+      }
+      return operation;
+    });
+  }
 
   const tableHeaders = useMemo(
     () => [
