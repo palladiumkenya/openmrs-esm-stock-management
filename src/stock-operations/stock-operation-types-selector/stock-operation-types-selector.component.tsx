@@ -17,17 +17,17 @@ const StockOperationTypesSelector = () => {
  **/
 
   const transformedOperationTypes = useMemo(() => {
-    return operationTypes.flatMap((operation) => {
-      if (operation.operationType === 'adjustment') {
-        return [
-          { ...operation, name: 'Negative Adjustment' },
-
-          { ...operation, name: 'Positive Adjustment' },
-        ];
-      }
-
-      return operation;
-    });
+    return operationTypes
+      .filter((operation) => operation.operationType !== OperationType.STOCK_ISSUE_OPERATION_TYPE)
+      .flatMap((operation) => {
+        if (operation.operationType === 'adjustment') {
+          return [
+            { ...operation, name: 'Negative Adjustment' },
+            { ...operation, name: 'Positive Adjustment' },
+          ];
+        }
+        return operation;
+      });
   }, [operationTypes]);
 
   const handleSelect = useCallback(
