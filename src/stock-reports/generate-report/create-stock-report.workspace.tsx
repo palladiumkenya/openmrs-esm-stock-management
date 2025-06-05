@@ -177,15 +177,15 @@ const CreateReport: React.FC<CreateReportProps> = ({ model, closeWorkspace }) =>
     return <InlineLoading status="active" iconDescription="Loading" description="Loading data..." />;
   }
 
-  const handleSave = async (report: StockReportSchema) => {
+  const onSubmit = async (report: StockReportSchema) => {
     const reportSystemName = (reportTypes as any).find(
       (reportType) => reportType.name === report.reportName,
     )?.systemName;
 
-    let hideSplash = true;
     try {
       const newLine = '\r\n';
       let parameters = `param.report=${reportSystemName}${newLine}`;
+
       if (displayFulfillment) {
         parameters += getReportParameter(
           ReportParameter.Fullfillment,
@@ -321,11 +321,13 @@ const CreateReport: React.FC<CreateReportProps> = ({ model, closeWorkspace }) =>
           newLine,
         );
       }
+
       const newItem = {
         batchJobType: BatchJobTypeReport,
         description: report.reportName,
         parameters: parameters,
       };
+
       await createBatchJob(newItem)
         .then((response) => {
           if (response.status === 201) {
@@ -353,12 +355,18 @@ const CreateReport: React.FC<CreateReportProps> = ({ model, closeWorkspace }) =>
           });
           closeWorkspace();
         });
-      hideSplash = false;
-    } finally {
-      if (hideSplash) {
-        // setShowSplash(false);
-      }
+    } catch (error) {
+      console.error('Error in handleSave:', error);
+      showSnackbar({
+        title: t('BatchJobErrorTitle', 'Batch job'),
+        subtitle: t('batchJobErrorMessage', 'Error creating batch job'),
+        kind: 'error',
+      });
+      closeWorkspace();
     }
+  };
+  const onError = (error: any) => {
+    console.error(error);
   };
   const getReportParameter = (
     name: string,
@@ -371,7 +379,7 @@ const CreateReport: React.FC<CreateReportProps> = ({ model, closeWorkspace }) =>
   };
 
   return (
-    <Form className={styles.container}>
+    <Form className={styles.container} onSubmit={handleSubmit(onSubmit, onError)}>
       <Stack className={styles.form} gap={5}>
         <>
           <FormGroup legendText={t('reportName', 'Report name')}>
@@ -655,7 +663,7 @@ const CreateReport: React.FC<CreateReportProps> = ({ model, closeWorkspace }) =>
         <Button kind="secondary" onClick={closeWorkspace} className={styles.button}>
           {getCoreTranslation('cancel')}
         </Button>
-        <Button type="submit" className={styles.button} onClick={handleSave}>
+        <Button type="submit" className={styles.button}>
           {getCoreTranslation('save')}
         </Button>
       </ButtonSet>
