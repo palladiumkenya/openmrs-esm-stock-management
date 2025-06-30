@@ -126,6 +126,8 @@ export const baseStockOperationItemSchema = z.object({
   quantity: z.coerce.number().min(1, { message: 'Required' }),
   purchasePrice: z.coerce.number().nullish(),
   hasExpiration: z.boolean().nullish(),
+  brandName: z.string().nullish(),
+  manufacturerName: z.string().nullish(),
 });
 
 export type BaseStockOperationItemFormData = z.infer<typeof baseStockOperationItemSchema>;
