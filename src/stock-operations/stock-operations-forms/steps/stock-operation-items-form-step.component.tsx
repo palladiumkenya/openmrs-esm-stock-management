@@ -26,6 +26,7 @@ import StockOperationItemCell from './stock-operation-item-cell.component';
 import StockoperationItemExpiryCell from './stock-operation-item-expiry-cell.component';
 import styles from './stock-operation-items-form-step.scc.scss';
 import { showSnackbar } from '@openmrs/esm-framework';
+import StockOperationItemBrandNameCell from './stock-operation-item-brand-name-cell.component';
 
 type StockOperationItemsFormStepProps = {
   stockOperation?: StockOperationDTO;
@@ -93,6 +94,15 @@ const StockOperationItemsFormStep: React.FC<StockOperationItemsFormStepProps> = 
         key: 'quantityuom',
         header: t('quantityUom', 'Qty UoM'),
       },
+      ...(operationTypePermision.requiresBatchUuid || operationTypePermision.requiresActualBatchInfo
+        ? [
+            {
+              key: 'brand',
+              header: t('brandName', 'Brand Name'),
+              styles: { width: '15% !important' },
+            },
+          ]
+        : []),
       ...(operationTypePermision.canCaptureQuantityPrice
         ? [
             {
@@ -109,6 +119,7 @@ const StockOperationItemsFormStep: React.FC<StockOperationItemsFormStepProps> = 
     return observableOperationItems?.map((item, index) => {
       const {
         batchNo,
+        brandName,
         expiration,
         quantity,
         purchasePrice,
@@ -127,6 +138,14 @@ const StockOperationItemsFormStep: React.FC<StockOperationItemsFormStepProps> = 
             operation={stockOperationType}
             stockBatchUuid={stockBatchUuid}
             batchNo={batchNo}
+            stockItemUuid={stockItemUuid}
+          />
+        ),
+        brand: (
+          <StockOperationItemBrandNameCell
+            operation={stockOperationType}
+            stockBatchUuid={stockBatchUuid}
+            brandName={brandName}
             stockItemUuid={stockItemUuid}
           />
         ),

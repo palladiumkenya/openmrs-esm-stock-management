@@ -5,4 +5,6 @@ export interface StockBatch extends BaseOpenmrsData {
   batchNo: string;
   expiration: Date;
   stockItem: StockItem;
+  brandName?: string;
+  manufacturerName?: string;
 }

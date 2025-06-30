@@ -5,4 +5,6 @@ export interface StockBatchDTO {
   stockItemUuid: string;
   quantity: string;
   voided: boolean;
+  brandName?: string;
+  manufacturerName?: string;
 }

@@ -185,6 +185,50 @@ const StockItemForm: React.FC<StockItemFormProps> = ({ stockOperationType, stock
           />
         </Column>
 
+        {(operationTypePermision.requiresActualBatchInfo || operationTypePermision.requiresBatchUuid) &&
+          fields.includes('brandName') && (
+            <Column>
+              <Controller
+                control={form.control}
+                defaultValue={stockOperationItem?.batchNo}
+                name={'brandName'}
+                render={({ field, fieldState: { error } }) => (
+                  <TextInput
+                    maxLength={50}
+                    {...field}
+                    invalidText={error?.message}
+                    invalid={error?.message}
+                    placeholder={t('brandName', 'Brand Name')}
+                    labelText={t('brandName', 'Brand Name')}
+                    id="brandName"
+                  />
+                )}
+              />
+            </Column>
+          )}
+
+        {(operationTypePermision.requiresActualBatchInfo || operationTypePermision.requiresBatchUuid) &&
+          fields.includes('manufacturerName') && (
+            <Column>
+              <Controller
+                control={form.control}
+                defaultValue={stockOperationItem?.batchNo}
+                name={'manufacturerName'}
+                render={({ field, fieldState: { error } }) => (
+                  <TextInput
+                    maxLength={50}
+                    {...field}
+                    invalidText={error?.message}
+                    invalid={error?.message}
+                    placeholder={t('manufacturerName', 'Manufacturer Name')}
+                    labelText={t('manufacturerName', 'Manufacturer Name')}
+                    id="manufacturerName"
+                  />
+                )}
+              />
+            </Column>
+          )}
+
         {operationTypePermision?.canCaptureQuantityPrice && fields.includes('purchasePrice' as any) && (
           <Column>
             <Controller
