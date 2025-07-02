@@ -36,8 +36,6 @@ const StockOperationTypesSelector = () => {
 
   const handleSelect = useCallback(
     (stockOperationType: ExtendedStockOperationType) => {
-      const isStockIssueOperation = stockOperationType.operationType === OperationType.STOCK_ISSUE_OPERATION_TYPE;
-
       launchStockoperationAddOrEditWorkSpace(t, stockOperationType, undefined);
     },
     [t],
