@@ -8,3 +8,12 @@ export interface StockBatchDTO {
   brandName?: string;
   manufacturerName?: string;
 }
+
+export interface StockBatchWithUoM extends StockBatchDTO {
+  quantityUoM?: string;
+  quantityFactor?: string;
+  quantityUoMUuid?: string;
+  partyName?: string;
+  locationUuid?: string;
+  partyUuid?: string;
+}
