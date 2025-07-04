@@ -7,6 +7,10 @@ import { OperationType, type StockOperationType } from '../../core/api/types/sto
 import { launchStockoperationAddOrEditWorkSpace } from '../stock-operation.utils';
 import useFilteredOperationTypesByRoles from '../stock-operations-forms/hooks/useFilteredOperationTypesByRoles';
 
+interface ExtendedStockOperationType extends StockOperationType {
+  adjustmentType?: 'positive' | 'negative';
+}
+
 const StockOperationTypesSelector = () => {
   const { t } = useTranslation();
   const { error, isLoading, operationTypes } = useFilteredOperationTypesByRoles();
@@ -19,21 +23,19 @@ const StockOperationTypesSelector = () => {
   const transformedOperationTypes = useMemo(() => {
     return operationTypes
       .filter((operation) => operation.operationType !== OperationType.STOCK_ISSUE_OPERATION_TYPE)
-      .flatMap((operation) => {
+      .flatMap((operation): ExtendedStockOperationType[] => {
         if (operation.operationType === 'adjustment') {
           return [
-            { ...operation, name: 'Negative Adjustment' },
-            { ...operation, name: 'Positive Adjustment' },
+            { ...operation, name: 'Negative Adjustment', adjustmentType: 'negative' },
+            { ...operation, name: 'Positive Adjustment', adjustmentType: 'positive' },
           ];
         }
-        return operation;
+        return [operation];
       });
   }, [operationTypes]);
 
   const handleSelect = useCallback(
-    (stockOperationType: StockOperationType) => {
-      const isStockIssueOperation = stockOperationType.operationType === OperationType.STOCK_ISSUE_OPERATION_TYPE;
-
+    (stockOperationType: ExtendedStockOperationType) => {
       launchStockoperationAddOrEditWorkSpace(t, stockOperationType, undefined);
     },
     [t],
@@ -77,7 +79,7 @@ const StockOperationTypesSelector = () => {
         .sort((a, b) => a.name.localeCompare(b.name))
         .map((operation) => (
           <OverflowMenuItem
-            key={operation.uuid}
+            key={`${operation.uuid}-${operation.adjustmentType || 'default'}`}
             itemText={operation.name}
             onClick={() => {
               handleSelect(operation);

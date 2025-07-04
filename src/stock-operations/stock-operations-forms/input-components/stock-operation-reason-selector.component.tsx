@@ -10,20 +10,37 @@ import { OperationType } from '../../../core/api/types/stockOperation/StockOpera
 
 type StockOperationReasonSelectorProps = {
   stockOperationType: string;
+  adjustmentType?: 'positive' | 'negative';
 };
 
-const StockOperationReasonSelector: React.FC<StockOperationReasonSelectorProps> = ({ stockOperationType }) => {
-  const { stockAdjustmentReasonUUID, stockTakeReasonUUID } = useConfig<ConfigObject>();
-  const operationReason =
-    stockOperationType === OperationType.STOCK_TAKE_OPERATION_TYPE ? stockTakeReasonUUID : stockAdjustmentReasonUUID;
+const StockOperationReasonSelector: React.FC<StockOperationReasonSelectorProps> = ({
+  stockOperationType,
+  adjustmentType,
+}) => {
+  const { stockAdjustmentReasonUUID, stockNegativeReasonUuid, stockPositiveReasonUuid, stockTakeReasonUUID } =
+    useConfig<ConfigObject>();
 
+  const getOperationReasonUUID = () => {
+    if (stockOperationType === OperationType.STOCK_TAKE_OPERATION_TYPE) {
+      return stockTakeReasonUUID;
+    }
+    if (stockOperationType === 'adjustment' && adjustmentType) {
+      return adjustmentType === 'positive' ? stockPositiveReasonUuid : stockNegativeReasonUuid;
+    }
+    return stockAdjustmentReasonUUID;
+  };
+
+  const operationReason = getOperationReasonUUID();
   const form = useFormContext<{ reasonUuid: string }>();
+
   const {
     isLoading,
     error,
     items: { answers: reasons },
   } = useConcept(operationReason);
+
   const { t } = useTranslation();
+
   if (isLoading) return <SelectSkeleton role="progressbar" />;
 
   if (error)

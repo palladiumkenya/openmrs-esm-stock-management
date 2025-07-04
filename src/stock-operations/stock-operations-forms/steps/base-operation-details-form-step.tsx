@@ -25,9 +25,12 @@ import StockOperationReasonSelector from '../input-components/stock-operation-re
 import UsersSelector from '../input-components/users-selector.component';
 import styles from '../stock-operation-form.scss';
 
+interface ExtendedStockOperationType extends StockOperationType {
+  adjustmentType?: 'positive' | 'negative';
+}
 type BaseOperationDetailsFormStepProps = {
   stockOperation?: StockOperationDTO;
-  stockOperationType: StockOperationType;
+  stockOperationType: ExtendedStockOperationType;
   onNext?: () => void;
 };
 
@@ -223,7 +226,10 @@ const BaseOperationDetailsFormStep: FC<BaseOperationDetailsFormStepProps> = ({
       <UsersSelector />
       {operationTypePermision.requiresStockAdjustmentReason && (
         <Column>
-          <StockOperationReasonSelector stockOperationType={stockOperationType?.operationType} />
+          <StockOperationReasonSelector
+            stockOperationType={stockOperationType?.operationType}
+            adjustmentType={stockOperationType?.adjustmentType}
+          />
         </Column>
       )}
       <Column>
