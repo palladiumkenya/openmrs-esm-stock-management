@@ -52,8 +52,8 @@ describe('BatchNoSelector', () => {
 
     mockUseStockItemBatchInformationHook.mockReturnValue({
       items: [
-        { batchNumber: 'BATCH-001', quantity: 10 },
-        { batchNumber: 'BATCH-002', quantity: 20 },
+        { batchNumber: 'BATCH-001', quantity: 10, partyName: 'Loc1' },
+        { batchNumber: 'BATCH-002', quantity: 20, partyName: 'Loc2' },
       ] as StockItemInventory[],
       totalCount: 2,
       currentPage: 1,
@@ -118,7 +118,7 @@ describe('BatchNoSelector', () => {
     await user.click(combobox);
     await user.type(combobox, 'BATCH-001');
 
-    const option = screen.getByText(`BATCH-001 | Qty: 10 | Expiry: ${formatForDatePicker(mockExpiration)}`);
+    const option = screen.getByText(`BATCH-001 | Qty: 10 | Expiry: ${formatForDatePicker(mockExpiration)} | Loc1`);
 
     await user.click(option);
 

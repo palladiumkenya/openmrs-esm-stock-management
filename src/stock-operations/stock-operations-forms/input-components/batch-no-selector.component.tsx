@@ -25,16 +25,17 @@ const BatchNoSelector: React.FC<BatchNoSelectorProps> = ({ stockItemUuid, error,
   const stockItemBatchesInfo = useMemo(() => {
     if (!stockItemBatchNos) return [];
 
-    return stockItemBatchNos.map((item) => {
-      const matchingBatch = items?.find((batch) => batch.batchNumber === item.batchNo);
+    return stockItemBatchNos.flatMap((item) => {
+      const matchingBatches = items?.filter((batch) => batch.batchNumber === item.batchNo) || [];
 
-      return matchingBatch
-        ? ({
-            ...item,
-            ...matchingBatch,
-            quantity: String(matchingBatch.quantity),
-          } as StockBatchWithUoM)
-        : (item as StockBatchWithUoM);
+      if (matchingBatches.length > 0) {
+        return matchingBatches.map((batch) => ({
+          ...item,
+          ...batch,
+          quantity: String(batch.quantity),
+        })) as StockBatchWithUoM[];
+      }
+      return [item as StockBatchWithUoM];
     });
   }, [stockItemBatchNos, items]);
 
@@ -81,8 +82,9 @@ const BatchNoSelector: React.FC<BatchNoSelectorProps> = ({ stockItemUuid, error,
 
       const quantityDisplay = formatQuantityDisplay(batch);
       const expiryDate = batch.expiration ? formatForDatePicker(batch.expiration) : t('noExpiry', 'No expiry');
+      const location = batch?.partyName ? batch?.partyName : '';
 
-      return `${batch.batchNo} | Qty: ${quantityDisplay} | Expiry: ${expiryDate}`;
+      return `${batch.batchNo} | Qty: ${quantityDisplay} | Expiry: ${expiryDate} | ${location}`;
     },
     [formatQuantityDisplay, t],
   );
