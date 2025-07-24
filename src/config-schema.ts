@@ -30,6 +30,16 @@ export const configSchema = {
     _description: 'UUID for the stock adjustment reasons',
     _default: '3bbfaa44-d5b8-404d-b4c1-2bf49ad8ce25',
   },
+  stockNegativeReasonUuid: {
+    _type: Type.ConceptUuid,
+    _description: 'UUID for the stock negative reasons',
+    _default: '37123baa-e890-4337-b630-bf5cac9ed9d5',
+  },
+  stockPositiveReasonUuid: {
+    _type: Type.ConceptUuid,
+    _description: 'UUID for the stock positive reasons',
+    _default: '3bbfaa44-d5b8-404d-b4c1-2bf49ad8ce25',
+  },
   stockTakeReasonUUID: {
     _type: Type.ConceptUuid,
     _description: 'UUID for the stock take reasons',
@@ -81,6 +91,8 @@ export type ConfigObject = {
   printBalanceOnHand: boolean;
   packagingUnitsUUID: string;
   stockAdjustmentReasonUUID: string;
+  stockNegativeReasonUuid: string;
+  stockPositiveReasonUuid: string;
   stockSourceTypeUUID: string;
   dispensingUnitsUUID: string;
   stockItemCategoryUUID: string;
