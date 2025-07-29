@@ -22,7 +22,11 @@ const StockOperationTypesSelector = () => {
 
   const transformedOperationTypes = useMemo(() => {
     return operationTypes
-      .filter((operation) => operation.operationType !== OperationType.STOCK_ISSUE_OPERATION_TYPE)
+      .filter(
+        (operation) =>
+          operation.operationType !== OperationType.STOCK_ISSUE_OPERATION_TYPE &&
+          operation.operationType !== OperationType.TRANSFER_OUT_OPERATION_TYPE,
+      )
       .flatMap((operation): ExtendedStockOperationType[] => {
         if (operation.operationType === 'adjustment') {
           return [
