@@ -37,11 +37,23 @@ const Transactions: React.FC<TransactionsProps> = ({ stockItemUuid }) => {
   }, [stockItemUuid, setStockItemUuid]);
 
   const { control } = useForm({});
+  // Transform items to handle adjustment operation types into positive and negative
+  const transformedItems = useMemo(() => {
+    return items?.map((item) => {
+      if (item?.stockOperationTypeName === 'Adjustment') {
+        return {
+          ...item,
+          stockOperationTypeName:
+            item?.quantity > 0 ? 'Positive Adjustment' : item?.quantity < 0 ? 'Negative Adjustment' : 'Adjustment',
+        };
+      }
+      return item;
+    });
+  }, [items]);
 
   const tableRows = useMemo(() => {
-    return items?.map((stockItemTransaction) => {
+    return transformedItems?.map((stockItemTransaction) => {
       const balance = inventory?.total ?? '';
-
       return {
         ...stockItemTransaction,
         id: stockItemTransaction?.uuid,
@@ -119,7 +131,7 @@ const Transactions: React.FC<TransactionsProps> = ({ stockItemUuid }) => {
         balance: `${balance} ${stockItemTransaction?.packagingUomName ?? ''}`,
       };
     });
-  }, [items, inventory]);
+  }, [transformedItems, inventory]);
 
   if (isLoading) {
     return <DataTableSkeleton role="progressbar" />;
