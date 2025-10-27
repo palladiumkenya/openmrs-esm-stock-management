@@ -5,22 +5,57 @@ import { type StockBatchWithUoM } from '../../../core/api/types/stockItem/StockB
 import { formatForDatePicker } from '../../../constants';
 import { useStockItemBatchInformationHook } from '../../../stock-items/add-stock-item/batch-information/batch-information.resource';
 import { useStockItemBatchNumbers } from '../hooks/useStockItemBatchNumbers';
+import { type StockOperationType } from '../../../core/api/types/stockOperation/StockOperationType';
+import { OperationType } from '../../../core/api/types/stockOperation/StockOperationType';
 
 interface BatchNoSelectorProps {
   stockItemUuid: string;
-  initialValue?: string;
-  onValueChange?: (value: string) => void;
+  initialValue?: string | null;
+  onValueChange?: (value: string | null) => void;
+  onStockStatusChange?: (isOutOfStock: boolean) => void;
   error?: string;
+  stockOperationType?: StockOperationType;
 }
 
-const BatchNoSelector: React.FC<BatchNoSelectorProps> = ({ stockItemUuid, error, initialValue, onValueChange }) => {
+const BatchNoSelector: React.FC<BatchNoSelectorProps> = ({
+  stockItemUuid,
+  error,
+  initialValue,
+  onValueChange,
+  onStockStatusChange,
+  stockOperationType,
+}) => {
   const { isLoading, stockItemBatchNos } = useStockItemBatchNumbers(stockItemUuid);
   const { t } = useTranslation();
   const { items, setStockItemUuid, isLoading: isLoadingBatchinfo } = useStockItemBatchInformationHook();
 
+  const totalQuantity = useMemo(() => {
+    if (!items?.length) return 0;
+    return items.reduce((total, batch) => {
+      return total + (Number(batch.quantity) || 0);
+    }, 0);
+  }, [items]);
+
+  const isStockIssueOperation = stockOperationType?.operationType === OperationType.STOCK_ISSUE_OPERATION_TYPE;
+  const isOutOfStock = totalQuantity === 0;
+
   useEffect(() => {
     setStockItemUuid(stockItemUuid);
   }, [stockItemUuid, setStockItemUuid]);
+
+  // Notify parent component about stock status for stock issue operations
+  useEffect(() => {
+    if (isStockIssueOperation && onStockStatusChange) {
+      onStockStatusChange(isOutOfStock);
+    }
+  }, [isStockIssueOperation, isOutOfStock, onStockStatusChange]);
+
+  // Auto-clear batch selection only when going out of stock (not when coming back in stock)
+  useEffect(() => {
+    if (isStockIssueOperation && isOutOfStock && initialValue) {
+      onValueChange?.(null);
+    }
+  }, [isStockIssueOperation, isOutOfStock, initialValue, onValueChange]);
 
   const stockItemBatchesInfo = useMemo(() => {
     if (!stockItemBatchNos) return [];
@@ -91,7 +126,7 @@ const BatchNoSelector: React.FC<BatchNoSelectorProps> = ({ stockItemUuid, error,
 
   const handleChange = useCallback(
     (data: { selectedItem?: StockBatchWithUoM | null }) => {
-      onValueChange?.(data.selectedItem?.uuid ?? '');
+      onValueChange?.(data.selectedItem?.uuid ?? null);
     },
     [onValueChange],
   );
@@ -99,6 +134,28 @@ const BatchNoSelector: React.FC<BatchNoSelectorProps> = ({ stockItemUuid, error,
   if (isLoading || isLoadingBatchinfo) {
     return <SelectSkeleton role="progressbar" />;
   }
+
+  // For stock issue operations when out of stock, disable the batch selector
+  if (isStockIssueOperation && isOutOfStock) {
+    return (
+      <ComboBox
+        id="stockBatchUuid"
+        invalid={false}
+        items={[]}
+        itemToString={() => ''}
+        name="stockBatchUuid"
+        disabled={true}
+        placeholder={t('outOfStock', 'Out of stock - no batches available')}
+        selectedItem={null}
+        style={{ flexGrow: 1 }}
+        titleText={t('batchNo', 'Batch no.')}
+        helperText={t('outOfStockHelper', 'This item is out of stock. Quantity will be set to 0.')}
+      />
+    );
+  }
+
+  // For stock issue operations with stock, batch selection is required
+  const isRequired = isStockIssueOperation && !isOutOfStock;
 
   return (
     <ComboBox
@@ -112,7 +169,7 @@ const BatchNoSelector: React.FC<BatchNoSelectorProps> = ({ stockItemUuid, error,
       placeholder={`${t('filter', 'Filter')}...`}
       selectedItem={initialSelectedItem}
       style={{ flexGrow: 1 }}
-      titleText={t('batchNo', 'Batch no.')}
+      titleText={isRequired ? `${t('batchNo', 'Batch no.')} *` : t('batchNo', 'Batch no.')}
     />
   );
 };

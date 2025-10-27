@@ -210,6 +210,7 @@
   "orderLevel": "Reorder level",
   "other": "Other",
   "outOfStock": "Out of stock",
+  "outOfStockHelper": "This item is out of stock. Quantity will be set to 0.",
   "overstockedItems": "Overstocked items",
   "packagingUnit": "Packaging Unit",
   "packagingUnits": "Packaging Units",

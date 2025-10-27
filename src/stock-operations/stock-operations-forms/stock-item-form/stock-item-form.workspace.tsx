@@ -12,7 +12,7 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useConfig, useLayoutType } from '@openmrs/esm-framework';
 import classNames from 'classnames';
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { type z } from 'zod';
@@ -21,9 +21,14 @@ import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT, formatForDatePicker, to
 import {
   operationFromString,
   type StockOperationType,
+  OperationType,
 } from '../../../core/api/types/stockOperation/StockOperationType';
 import { useStockItem } from '../../../stock-items/stock-items.resource';
-import { type BaseStockOperationItemFormData, getStockOperationItemFormSchema } from '../../validation-schema';
+import {
+  type BaseStockOperationItemFormData,
+  getStockOperationItemFormSchema,
+  getStockOperationItemBaseSchema,
+} from '../../validation-schema';
 import useOperationTypePermisions from '../hooks/useOperationTypePermisions';
 import BatchNoSelector from '../input-components/batch-no-selector.component';
 import QtyUomSelector from '../input-components/quantity-uom-selector.component';
@@ -44,17 +49,36 @@ const StockItemForm: React.FC<StockItemFormProps> = ({ stockOperationType, stock
   const formSchema = useMemo(() => {
     return getStockOperationItemFormSchema(operationType);
   }, [operationType]);
+  const baseSchema = useMemo(() => {
+    return getStockOperationItemBaseSchema(operationType);
+  }, [operationType]);
   const operationTypePermision = useOperationTypePermisions(stockOperationType);
   const { useItemCommonNameAsDisplay } = useConfig<ConfigObject>();
 
-  const fields = formSchema.keyof().options;
+  const fields = baseSchema.keyof().options;
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: stockOperationItem,
+    defaultValues: {
+      ...stockOperationItem,
+      isOutOfStock: stockOperationItem.isOutOfStock || false,
+      quantity: stockOperationItem.quantity, // Preserve original quantity
+    },
     mode: 'all',
   });
   const { t } = useTranslation();
   const { item } = useStockItem(form.getValues('stockItemUuid'));
+
+  const [isOutOfStock, setIsOutOfStock] = useState(stockOperationItem.isOutOfStock || false);
+  const [originalQuantity, setOriginalQuantity] = useState(stockOperationItem.quantity || 0);
+  const isStockIssueOperation = operationType === OperationType.STOCK_ISSUE_OPERATION_TYPE;
+
+  // Store the original quantity on mount
+  useEffect(() => {
+    if (stockOperationItem.quantity !== undefined && stockOperationItem.quantity !== null) {
+      setOriginalQuantity(stockOperationItem.quantity);
+    }
+  }, [stockOperationItem.quantity]);
+
   const commonName = useMemo(() => {
     if (!useItemCommonNameAsDisplay) return;
     const drugName = item?.drugName ? `(Drug name: ${item.drugName})` : undefined;
@@ -67,8 +91,67 @@ const StockItemForm: React.FC<StockItemFormProps> = ({ stockOperationType, stock
     return `${item?.drugName || t('noDrugNameAvailable', 'No drug name available') + (commonName ?? '')}`;
   }, [item, useItemCommonNameAsDisplay, t]);
 
+  // Handle stock status changes from BatchNoSelector
+  const handleStockStatusChange = (outOfStock: boolean) => {
+    setIsOutOfStock(outOfStock);
+    form.setValue('isOutOfStock', outOfStock);
+
+    // If out of stock during stock issue, set quantity to 0 and clear batch
+    if (isStockIssueOperation && outOfStock) {
+      form.setValue('quantity', 0);
+      form.setValue('stockBatchUuid' as any, null);
+      // Trigger validation to clear any errors
+      form.trigger(['quantity', 'stockBatchUuid']);
+    } else if (isStockIssueOperation && !outOfStock) {
+      // When stock becomes available, restore the original quantity if it was cleared
+      const currentQuantity = form.getValues('quantity');
+      if (currentQuantity === 0 && originalQuantity > 0) {
+        form.setValue('quantity', originalQuantity);
+      }
+      // Ensure batch selection is validated
+      form.trigger(['stockBatchUuid', 'quantity']);
+    }
+  };
+
+  // Watch for quantity changes and enforce 0 if out of stock
+  useEffect(() => {
+    if (isStockIssueOperation && isOutOfStock) {
+      const subscription = form.watch((value, { name }) => {
+        if (name === 'quantity' && value.quantity !== 0) {
+          form.setValue('quantity', 0);
+        }
+      });
+      return () => subscription.unsubscribe();
+    }
+  }, [form, isStockIssueOperation, isOutOfStock]);
+
+  // Initialize isOutOfStock in form when component mounts or stock status changes
+  useEffect(() => {
+    form.setValue('isOutOfStock', isOutOfStock);
+  }, [form, isOutOfStock]);
+
   const onSubmit = (data: z.infer<typeof formSchema>) => {
-    onSave?.(data);
+    console.log('Form submission data:', {
+      ...data,
+      isOutOfStock,
+      isStockIssueOperation,
+    });
+
+    // Ensure isOutOfStock is included in the saved data
+    const dataToSave = {
+      ...data,
+      isOutOfStock,
+      // For out of stock items, ensure quantity is 0 and batch is null
+      ...(isStockIssueOperation && isOutOfStock
+        ? {
+            quantity: 0,
+            stockBatchUuid: null,
+          }
+        : {}),
+    };
+
+    console.log('Saving data:', dataToSave);
+    onSave?.(dataToSave);
   };
 
   return (
@@ -108,8 +191,10 @@ const StockItemForm: React.FC<StockItemFormProps> = ({ stockOperationType, stock
                 <BatchNoSelector
                   initialValue={stockOperationItem?.stockBatchUuid}
                   onValueChange={field.onChange}
+                  onStockStatusChange={handleStockStatusChange}
                   stockItemUuid={stockOperationItem.stockItemUuid}
                   error={error?.message}
+                  stockOperationType={stockOperationType}
                 />
               )}
             />
@@ -166,6 +251,16 @@ const StockItemForm: React.FC<StockItemFormProps> = ({ stockOperationType, stock
                 label={t('qty', 'Qty')}
                 invalidText={error?.message}
                 invalid={error?.message}
+                disabled={isStockIssueOperation && isOutOfStock}
+                value={field.value}
+                onChange={(e, { value }) => {
+                  // For out of stock items, always enforce 0
+                  if (isStockIssueOperation && isOutOfStock) {
+                    field.onChange(0);
+                  } else {
+                    field.onChange(value);
+                  }
+                }}
               />
             )}
           />

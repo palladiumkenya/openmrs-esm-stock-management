@@ -19,6 +19,7 @@ import {
   type BaseStockOperationItemFormData,
   getStockOperationFormSchema,
   getStockOperationItemFormSchema,
+  getStockOperationItemBaseSchema,
   type StockOperationItemDtoSchema,
 } from '../validation-schema';
 import useOperationTypePermisions from './hooks/useOperationTypePermisions';
@@ -58,6 +59,9 @@ const StockOperationForm: React.FC<StockOperationFormProps> = ({
   const stockOperationItemFormSchema = useMemo(() => {
     return getStockOperationItemFormSchema(operationType);
   }, [operationType]);
+  const stockOperationItemBaseSchema = useMemo(() => {
+    return getStockOperationItemBaseSchema(operationType);
+  }, [operationType]);
   const formschema = useMemo(() => {
     return getStockOperationFormSchema(operationType);
   }, [operationType]);
@@ -90,7 +94,7 @@ const StockOperationForm: React.FC<StockOperationFormProps> = ({
         stockOperation?.stockOperationItems?.map((item) =>
           pick(
             { ...item, expiration: item.expiration ? parseDate(item.expiration as any) : undefined },
-            stockOperationItemFormSchema.keyof().options,
+            stockOperationItemBaseSchema.keyof().options,
           ),
         ) ?? [],
       sourceUuid: stockOperation?.sourceUuid ?? '',
@@ -105,7 +109,7 @@ const StockOperationForm: React.FC<StockOperationFormProps> = ({
           stockOperationItems: (_stockOperation?.stockOperationItems?.map((item) =>
             pick(
               { ...item, expiration: item?.expiration ? parseDate(item.expiration as any) : undefined },
-              stockOperationItemFormSchema.keyof().options,
+              stockOperationItemBaseSchema.keyof().options,
             ),
           ) ?? []) as any,
           requisitionStockOperationUuid: stockRequisitionUuid,

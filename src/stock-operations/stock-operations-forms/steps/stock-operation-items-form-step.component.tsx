@@ -14,7 +14,7 @@ import {
 import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { type StockOperationDTO } from '../../../core/api/types/stockOperation/StockOperationDTO';
-import { type StockOperationType } from '../../../core/api/types/stockOperation/StockOperationType';
+import { type StockOperationType, OperationType } from '../../../core/api/types/stockOperation/StockOperationType';
 import { getStockOperationUniqueId } from '../../stock-operation.utils';
 import { type BaseStockOperationItemFormData, type StockOperationItemDtoSchema } from '../../validation-schema';
 import useOperationTypePermisions from '../hooks/useOperationTypePermisions';
@@ -48,6 +48,8 @@ const StockOperationItemsFormStep: React.FC<StockOperationItemsFormStepProps> = 
 
   const form = useFormContext<StockOperationItemDtoSchema>();
   const observableOperationItems = form.watch('stockOperationItems');
+  const isStockIssueOperation = stockOperationType?.operationType === OperationType.STOCK_ISSUE_OPERATION_TYPE;
+
   const headers = useMemo(() => {
     return [
       {
@@ -185,29 +187,67 @@ const StockOperationItemsFormStep: React.FC<StockOperationItemsFormStepProps> = 
               kind="ghost"
               renderIcon={TrashCan}
               onClick={() => {
-                onLaunchItemsForm?.(item);
+                const items = form.getValues('stockOperationItems') as Array<BaseStockOperationItemFormData>;
+                const filteredItems = items.filter((i) => i.uuid !== item.uuid);
+                form.setValue('stockOperationItems', filteredItems as any);
               }}
             />
           </>
         ),
       };
     });
-  }, [observableOperationItems, onLaunchItemsForm, stockOperationType, uniqueId]);
+  }, [observableOperationItems, onLaunchItemsForm, stockOperationType, uniqueId, form]);
 
   const handleNext = async () => {
     const valid = await form.trigger(['stockOperationItems']);
-    if (valid) {
-      onNext();
-    } else {
+
+    if (!valid) {
+      const errors = form.formState.errors;
+
+      // Check if we have items
+      if (!observableOperationItems || observableOperationItems.length === 0) {
+        showSnackbar({
+          kind: 'error',
+          title: 'Validation error',
+          subtitle: 'You must add at least one item',
+        });
+        return;
+      }
+
+      // For stock issue operations, check for specific validation issues
+      if (isStockIssueOperation && errors.stockOperationItems) {
+        const itemErrors = errors.stockOperationItems as any;
+        let hasInStockItemWithoutBatch = false;
+        let errorMessage = 'Please fix the following issues:';
+
+        observableOperationItems.forEach((item: any, index: number) => {
+          const itemError = itemErrors[index];
+          if (itemError) {
+            // Check if it's a batch error for in-stock item
+            if (itemError.stockBatchUuid && !item.isOutOfStock) {
+              hasInStockItemWithoutBatch = true;
+              errorMessage = 'In-stock items require batch selection';
+            }
+          }
+        });
+
+        showSnackbar({
+          kind: 'error',
+          title: 'Validation error',
+          subtitle: hasInStockItemWithoutBatch ? errorMessage : 'Please update batch information for all items',
+        });
+        return;
+      }
+
       showSnackbar({
         kind: 'error',
         title: 'Validation error',
-        subtitle:
-          observableOperationItems && observableOperationItems.length > 0
-            ? 'You must update batch infomation for items'
-            : 'You must add atleast one item',
+        subtitle: 'Please correct the validation errors before proceeding',
       });
+      return;
     }
+
+    onNext?.();
   };
 
   const headerTitle = t('stockoperationItems', 'Stock operation items');
