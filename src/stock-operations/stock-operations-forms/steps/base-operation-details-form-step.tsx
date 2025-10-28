@@ -69,7 +69,7 @@ const BaseOperationDetailsFormStep: FC<BaseOperationDetailsFormStepProps> = ({
 
   // initialize location fields
   useEffect(() => {
-    // Prefill default locaton with current location if is a new operation
+    // Prefill default location with current location if is a new operation
     if (!stockOperation && stockOperationType.operationType !== OperationType.STOCK_ISSUE_OPERATION_TYPE) {
       if (stockOperationType?.hasSource) {
         const shouldLockSource = sourceTags.length === 1 && sourceTags[0] === MAIN_STORE_LOCATION_TAG;

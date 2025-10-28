@@ -50,10 +50,10 @@ export function useStockLocations(filter: LocationFilterCriteria) {
   };
 }
 /* Get locations tagged to perform stock related activities.
-   Unless a location is tag as main store, main pharmacy or dispensing, it will not be fetched.
+   Unless a location is tag as main store, main pharmacy,dispensing,sub store, it will not be fetched.
 */
 export function useStockTagLocations() {
-  const apiUrl = `${fhirBaseUrl}/Location?_summary=data&_tag=main store,main pharmacy,dispensary `;
+  const apiUrl = `${fhirBaseUrl}/Location?_summary=data&_tag=main store,main pharmacy,dispensary,sub store`;
   const { data, error, isLoading } = useSWR<{ data: FHIRResponse }>(apiUrl, openmrsFetch);
   const stockLocations = useMemo(
     () => data?.data?.entry?.map((response) => response.resource) ?? [],

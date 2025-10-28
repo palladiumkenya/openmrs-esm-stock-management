@@ -91,7 +91,7 @@ const AddStockUserRoleScope: React.FC<AddStockUserRoleScopeProps> = ({ model, ed
   });
 
   /* Only load locations tagged to perform stock related activities.
-     Unless a location is tag as main store, main pharmacy or dispensing, it will not be listed here.
+     Unless a location is tag as main store, main pharmacy or dispensing, sub store, it will not be listed here.
    */
   const { stockLocations } = useStockTagLocations();
   const onEnabledChanged = (): void => {
