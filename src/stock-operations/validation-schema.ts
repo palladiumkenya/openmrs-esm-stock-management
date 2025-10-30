@@ -35,7 +35,7 @@ export const stockOperationItemSchema = z.object({
   stockItemName: z.string().nullish(),
   stockItemPackagingUOMUuid: z.string().nullish(),
   stockItemPackagingUOMName: z.string().nullish(),
-  stockBatchUuid: z.string().nullish(),
+  stockBatchUuid: z.union([z.string(), z.null()]).nullish(),
   batchNo: z.string().nullish(),
   expiration: z.coerce.date().nullish(),
   quantity: z.number().nullish(),
@@ -116,6 +116,7 @@ export const stockOperationSchema = z.object({
   dispatchedDate: z.coerce.date(),
   requisitionStockOperationUuid: z.string().uuid().nullish(),
 });
+
 export const baseStockOperationItemSchema = z.object({
   uuid: z.string().min(1, 'Required'),
   stockItemUuid: z.string().min(1, { message: 'Required' }),
@@ -128,9 +129,56 @@ export const baseStockOperationItemSchema = z.object({
   hasExpiration: z.boolean().nullish(),
   brandName: z.string().nullish(),
   manufacturerName: z.string().nullish(),
+  isOutOfStock: z.boolean().optional(), // Track if item is out of stock
 });
 
 export type BaseStockOperationItemFormData = z.infer<typeof baseStockOperationItemSchema>;
+
+// Base schema for stock issue operation (without superRefine)
+const stockIssueBaseSchema = baseStockOperationItemSchema
+  .omit({
+    batchNo: true,
+    expiration: true,
+    purchasePrice: true,
+  })
+  .extend({
+    // Override quantity to allow 0 or positive values for stock issue
+    quantity: z.coerce.number().min(0, { message: 'Quantity cannot be negative' }),
+    // Make stockBatchUuid optional (will be validated conditionally)
+    stockBatchUuid: z.string().optional().nullable(),
+  });
+
+// Schema with validation for stock issue operation
+const stockIssueSchemaWithValidation = stockIssueBaseSchema.superRefine((data, ctx) => {
+  // Only validate if NOT out of stock
+  if (!data.isOutOfStock) {
+    // If item is in stock, batch is required
+    if (!data.stockBatchUuid) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Batch number is required when item is in stock',
+        path: ['stockBatchUuid'],
+      });
+    }
+    // Quantity can be 0 or more (no restriction)
+    if (data.quantity < 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Quantity cannot be negative for in-stock items',
+        path: ['quantity'],
+      });
+    }
+  } else {
+    // If item is out of stock, quantity must be 0
+    if (data.quantity !== 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Quantity must be 0 for out of stock items',
+        path: ['quantity'],
+      });
+    }
+  }
+});
 
 export const getStockOperationItemFormSchema = (operationType: OperationType) => {
   switch (operationType) {
@@ -157,9 +205,10 @@ export const getStockOperationItemFormSchema = (operationType: OperationType) =>
             message: 'Quantity cannot be zero.',
           }),
         });
+    case OperationType.STOCK_ISSUE_OPERATION_TYPE:
+      return stockIssueSchemaWithValidation;
     case OperationType.DISPOSED_OPERATION_TYPE:
     case OperationType.RETURN_OPERATION_TYPE:
-    case OperationType.STOCK_ISSUE_OPERATION_TYPE:
     case OperationType.STOCK_TAKE_OPERATION_TYPE:
     case OperationType.TRANSFER_OUT_OPERATION_TYPE:
       return baseStockOperationItemSchema.omit({
@@ -171,6 +220,46 @@ export const getStockOperationItemFormSchema = (operationType: OperationType) =>
       return baseStockOperationItemSchema;
   }
 };
+
+// Helper to get the base schema shape for field checking (without ZodEffects)
+export const getStockOperationItemBaseSchema = (operationType: OperationType) => {
+  switch (operationType) {
+    case OperationType.RECEIPT_OPERATION_TYPE:
+    case OperationType.OPENING_STOCK_OPERATION_TYPE:
+      return baseStockOperationItemSchema.omit({ stockBatchUuid: true });
+    case OperationType.REQUISITION_OPERATION_TYPE:
+      return baseStockOperationItemSchema.omit({
+        batchNo: true,
+        stockBatchUuid: true,
+        expiration: true,
+        purchasePrice: true,
+      });
+    case OperationType.ADJUSTMENT_OPERATION_TYPE:
+      return baseStockOperationItemSchema
+        .omit({
+          batchNo: true,
+          expiration: true,
+          purchasePrice: true,
+        })
+        .extend({
+          quantity: z.coerce.number(),
+        });
+    case OperationType.STOCK_ISSUE_OPERATION_TYPE:
+      return stockIssueBaseSchema;
+    case OperationType.DISPOSED_OPERATION_TYPE:
+    case OperationType.RETURN_OPERATION_TYPE:
+    case OperationType.STOCK_TAKE_OPERATION_TYPE:
+    case OperationType.TRANSFER_OUT_OPERATION_TYPE:
+      return baseStockOperationItemSchema.omit({
+        batchNo: true,
+        expiration: true,
+        purchasePrice: true,
+      });
+    default:
+      return baseStockOperationItemSchema;
+  }
+};
+
 export const stockOperationItemDtoSchema = z.object({
   operationDate: z.coerce.date(),
   sourceUuid: z.string({ required_error: 'Location Required' }).min(1, {

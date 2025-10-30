@@ -65,6 +65,7 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
       sourceTypeUuid: selectedSources.join(','),
       operationTypeUuid: selectedOperations.join(','),
     });
+  console.log('items', totalItems);
 
   const filterApplied =
     selectedFromDate || selectedToDate || selectedSources.length || selectedStatus.length || selectedOperations.length;
