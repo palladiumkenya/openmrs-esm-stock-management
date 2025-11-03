@@ -15,7 +15,7 @@ const PrintableStockcardTransactionHeader: React.FC<PrintableTransactionHeaderPr
   return (
     <div className={styles.container}>
       <div className={styles.printableHeader}>
-        <p className={styles.heading}>{t('bincard', 'Stock Card')}</p>
+        <p className={styles.heading}>{t('stockCard', 'Stock Card')}</p>
         {logo?.src ? (
           <img className={styles.img} height={60} width={250} src={logo.src} alt={logo.alt} />
         ) : logo?.name ? (
