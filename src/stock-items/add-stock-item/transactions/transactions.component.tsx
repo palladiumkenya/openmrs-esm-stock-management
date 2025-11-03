@@ -53,7 +53,6 @@ const Transactions: React.FC<TransactionsProps> = ({ stockItemUuid }) => {
 
   const tableRows = useMemo(() => {
     return transformedItems?.map((stockItemTransaction) => {
-      const balance = inventory?.total ?? '';
       return {
         ...stockItemTransaction,
         id: stockItemTransaction?.uuid,
@@ -128,10 +127,10 @@ const Transactions: React.FC<TransactionsProps> = ({ stockItemUuid }) => {
           stockItemTransaction?.quantity < 0
             ? `${-1 * stockItemTransaction?.quantity * Number(stockItemTransaction.packagingUomFactor)}`
             : '',
-        balance: `${balance} ${stockItemTransaction?.packagingUomName ?? ''}`,
+        balance: stockItemTransaction?.balance,
       };
     });
-  }, [transformedItems, inventory]);
+  }, [transformedItems]);
 
   if (isLoading) {
     return <DataTableSkeleton role="progressbar" />;
