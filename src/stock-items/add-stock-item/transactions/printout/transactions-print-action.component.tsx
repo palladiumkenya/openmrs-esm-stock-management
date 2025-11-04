@@ -38,15 +38,12 @@ const TransactionsPrintAction: React.FC<Props> = ({ columns, data, itemUuid, fil
 
   const { item: stockItem, isLoading: isStockItemLoading } = useStockItem(itemUuid);
   const { items: stockCardData, isLoading: isStockCardLoading, error } = useStockItemTransactions(stockCardItemFilter);
-  const { items: inventoryBalance } = useStockItemInventory(stockItemFilter);
 
-  const [balances, setBalances] = useState<Record<string, { quantity: number; itemName: string }>>({});
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
     if (stockCardData?.results?.length) {
       setCurrentIndex(0);
-      setBalances({});
     }
   }, [stockCardData?.results]);
 
@@ -60,34 +57,7 @@ const TransactionsPrintAction: React.FC<Props> = ({ columns, data, itemUuid, fil
     }
   }, [currentIndex, stockCardData]);
 
-  useEffect(() => {
-    const currentItem = stockCardData?.results?.[currentIndex];
-    const stockItemUuid = currentItem?.stockItemUuid;
-
-    if (inventoryBalance?.total && stockItemUuid) {
-      setBalances((prev) => ({
-        ...prev,
-        [stockItemUuid]: {
-          quantity: Number(inventoryBalance.total),
-          itemName: currentItem.packagingUomName ?? '',
-        },
-      }));
-
-      setCurrentIndex((prev) => prev + 1);
-    }
-  }, [inventoryBalance, currentIndex, stockCardData]);
-
-  const stockCardWithBalance = useMemo(() => {
-    return (
-      stockCardData?.results?.map((transaction) => {
-        const balance = balances[transaction.stockItemUuid];
-        return {
-          ...transaction,
-          balance: `${balance?.quantity ?? ''} ${balance?.itemName ?? ''}`,
-        };
-      }) ?? []
-    );
-  }, [stockCardData?.results, balances]);
+  const stockCardWithBalance = stockCardData?.results ?? [];
 
   const stockCardHeaders = useMemo(
     () => [

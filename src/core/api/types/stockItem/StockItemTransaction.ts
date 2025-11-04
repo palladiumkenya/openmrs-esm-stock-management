@@ -7,6 +7,7 @@ export interface StockItemTransactionDTO {
   partyName: string;
   isPatientTransaction: boolean;
   quantity: number;
+  balance: number;
   stockBatchUuid: string;
   stockBatchNo: string;
   expiration: Date;
