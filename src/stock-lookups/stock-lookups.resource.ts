@@ -143,6 +143,20 @@ export function useStockOperationTypes() {
   };
 }
 
+export function useLocationsTaggedMainStoreAndSubstore() {
+  const apiUrl = `${fhirBaseUrl}/Location?_summary=data&_tag=main store,sub store`;
+  const { data, error, isLoading } = useSWR<{ data: FHIRResponse }>(apiUrl, openmrsFetch);
+  const stockLocations = useMemo(
+    () => data?.data?.entry?.map((response) => response.resource) ?? [],
+    [data?.data?.entry],
+  );
+  return {
+    locationsTaggedMainStoreAndSubstore: uniqBy(stockLocations, 'id') ?? [],
+    isLoading,
+    error,
+  };
+}
+
 export function getStockOperationTypes(): Promise<FetchResponse<PageableResult<StockOperationType>>> {
   const apiUrl = `${restBaseUrl}/stockmanagement/stockoperationtype?v=default`;
   return openmrsFetch(apiUrl);

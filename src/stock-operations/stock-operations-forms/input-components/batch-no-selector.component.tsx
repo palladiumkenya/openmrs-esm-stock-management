@@ -7,6 +7,7 @@ import { useStockItemBatchInformationHook } from '../../../stock-items/add-stock
 import { useStockItemBatchNumbers } from '../hooks/useStockItemBatchNumbers';
 import { type StockOperationType } from '../../../core/api/types/stockOperation/StockOperationType';
 import { OperationType } from '../../../core/api/types/stockOperation/StockOperationType';
+import { useLocationsTaggedMainStoreAndSubstore, useUserRoles } from '../../../stock-lookups/stock-lookups.resource';
 
 interface BatchNoSelectorProps {
   stockItemUuid: string;
@@ -28,6 +29,12 @@ const BatchNoSelector: React.FC<BatchNoSelectorProps> = ({
   const { isLoading, stockItemBatchNos } = useStockItemBatchNumbers(stockItemUuid);
   const { t } = useTranslation();
   const { items, setStockItemUuid, isLoading: isLoadingBatchinfo } = useStockItemBatchInformationHook();
+  const currentUserRoles = useUserRoles();
+  const { locationsTaggedMainStoreAndSubstore } = useLocationsTaggedMainStoreAndSubstore();
+  const stockIssueLocationsForCurrentUser = getMatchingUserLocations(
+    currentUserRoles,
+    locationsTaggedMainStoreAndSubstore,
+  );
 
   const totalQuantity = useMemo(() => {
     if (!items?.length) return 0;
@@ -73,6 +80,9 @@ const BatchNoSelector: React.FC<BatchNoSelectorProps> = ({
       return [item as StockBatchWithUoM];
     });
   }, [stockItemBatchNos, items]);
+  const allowedStockIssueLocationNames = useMemo(() => {
+    return new Set(stockIssueLocationsForCurrentUser.map((loc) => loc.locationName?.trim()).filter(Boolean));
+  }, [stockIssueLocationsForCurrentUser]);
 
   const filteredBatches = useMemo(() => {
     if (!stockItemBatchesInfo) return [];
@@ -80,9 +90,20 @@ const BatchNoSelector: React.FC<BatchNoSelectorProps> = ({
     return stockItemBatchesInfo.filter((batch) => {
       const quantity = typeof batch.quantity === 'string' ? parseFloat(batch.quantity) : batch.quantity;
 
-      return !isNaN(quantity) && quantity > 0;
+      if (isNaN(quantity) || quantity <= 0) return false;
+
+      // Apply location restriction ONLY for stock issue operations
+      if (!isStockIssueOperation) {
+        return true;
+      }
+
+      // For stock issue: must be in allowed locations
+      if (allowedStockIssueLocationNames.size === 0) return true; // fallback: no restriction
+
+      const locationName = (batch.partyName || '').trim();
+      return allowedStockIssueLocationNames.has(locationName);
     });
-  }, [stockItemBatchesInfo]);
+  }, [stockItemBatchesInfo, allowedStockIssueLocationNames, isStockIssueOperation]);
 
   const initialSelectedItem = useMemo(
     () => filteredBatches.find((batch) => batch.uuid === initialValue) ?? null,
@@ -173,5 +194,25 @@ const BatchNoSelector: React.FC<BatchNoSelectorProps> = ({
     />
   );
 };
+
+function getMatchingUserLocations(userRoles, fhirLocations) {
+  if (!userRoles?.userRoles?.locations || !Array.isArray(userRoles.userRoles.locations)) {
+    return [];
+  }
+  // Get the list of location UUIDs from the FHIR locations array
+  const fhirLocationIds = fhirLocations
+    .map((location) => (typeof location === 'string' ? location : location?.id || location?.resource?.id))
+    .filter(Boolean); // remove any undefined/null
+
+  if (fhirLocationIds.length === 0) {
+    return [];
+  }
+  // Filter user's locations to only those whose locationUuid is in the FHIR list
+  const matchingLocations = userRoles?.userRoles?.locations.filter((userLoc) =>
+    fhirLocationIds.includes(userLoc.locationUuid),
+  );
+
+  return matchingLocations;
+}
 
 export default BatchNoSelector;
