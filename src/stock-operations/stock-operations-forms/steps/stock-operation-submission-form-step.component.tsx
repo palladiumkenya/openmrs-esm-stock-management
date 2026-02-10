@@ -35,7 +35,9 @@ const StockOperationSubmissionFormStep: React.FC<StockOperationSubmissionFormSte
   const operationTypePermision = useOperationTypePermisions(stockOperationType);
   const editable = useMemo(() => !stockOperation || stockOperation.status === 'NEW', [stockOperation]);
   const form = useFormContext<StockOperationItemDtoSchema>();
-  const [approvalRequired, setApprovalRequired] = useState<boolean | null>(stockOperation?.approvalRequired);
+  const [approvalRequired, setApprovalRequired] = useState<boolean | null>(
+    stockOperation?.approvalRequired || operationTypePermision.requirePriority,
+  );
   const isStockIssueOperation = useMemo(
     () => OperationType.STOCK_ISSUE_OPERATION_TYPE === stockOperationType.operationType,
     [stockOperationType],
@@ -148,13 +150,12 @@ const StockOperationSubmissionFormStep: React.FC<StockOperationSubmissionFormSte
             : t('submitAndComplete', 'Submit/Complete')}
         </h4>
       </div>
-
       <Column>
         <RadioButtonGroup
           name="rbgApprovelRequired"
           legendText={t('doesThisTransactionRequireApproval', 'Does the transaction require approval ?')}
           onChange={(value) => handleRadioButtonChange(value === 'true')}
-          readOnly={!editable}
+          readOnly={!editable || operationTypePermision.requirePriority}
           valueSelected={approvalRequired === true ? 'true' : approvalRequired === false ? 'false' : null}
         >
           <RadioButton value="true" id="rbgApprovelRequired-true" labelText={t('yes', 'Yes')} />

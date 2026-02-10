@@ -1,9 +1,11 @@
 import { useMemo } from 'react';
 import { uniqBy } from 'lodash-es';
 import useSWR from 'swr';
+import useSwrImmutable from 'swr/immutable';
 import {
   type FetchResponse,
   type OpenmrsResource,
+  type FHIRLocationResource,
   fhirBaseUrl,
   openmrsFetch,
   useSession,
@@ -20,6 +22,7 @@ import { type Role } from '../core/api/types/identity/Role';
 import { type StockOperationType } from '../core/api/types/stockOperation/StockOperationType';
 import { type User } from '../core/api/types/identity/User';
 import { type UserRoleScope } from '../core/api/types/identity/UserRoleScope';
+import { MAIN_STORE_LOCATION_TAG } from '../constants';
 
 export type ConceptFilterCriteria = ResourceFilterCriteria;
 export type DrugFilterCriteria = ResourceFilterCriteria;
@@ -140,6 +143,51 @@ export function useStockOperationTypes() {
     types: data?.data || <PageableResult<StockOperationType>>{},
     isLoading,
     error,
+  };
+}
+
+export interface LocationResponse {
+  type: string;
+  total: number;
+  resourceType: string;
+  meta: {
+    lastUpdated: string;
+  };
+  link: Array<{
+    relation: string;
+    url: string;
+  }>;
+  id: string;
+  entry: Array<FHIRLocationResource>;
+}
+
+export function useIsSessionLocationMainStore() {
+  const {
+    sessionLocation: { uuid: locationUuid },
+  } = useSession();
+  const url = locationUuid ? `/ws/fhir2/R4/Location?_id=${locationUuid}` : null;
+
+  const { data, error, isLoading } = useSwrImmutable<FetchResponse<LocationResponse>>(url, openmrsFetch, {
+    shouldRetryOnError(err) {
+      if (err?.response?.status) {
+        return err.response.status >= 500;
+      }
+      return false;
+    },
+  });
+
+  const isMainstore = useMemo(
+    () =>
+      data?.data?.entry
+        ? data.data.entry[0]?.resource?.meta?.tag?.some((tag) => tag.code === MAIN_STORE_LOCATION_TAG)
+        : false,
+    [data],
+  );
+
+  return {
+    error: url ? error : null,
+    isLoading: url ? isLoading : false,
+    isMainstore,
   };
 }
 

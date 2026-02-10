@@ -8,11 +8,12 @@ import {
   NumberInput,
   Stack,
   TextInput,
+  TextArea,
 } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useConfig, useLayoutType } from '@openmrs/esm-framework';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { type ChangeEvent, useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { type z } from 'zod';
@@ -28,6 +29,7 @@ import {
   type BaseStockOperationItemFormData,
   getStockOperationItemFormSchema,
   getStockOperationItemBaseSchema,
+  type ExternalRequisitionExtrafields,
 } from '../../validation-schema';
 import useOperationTypePermisions from '../hooks/useOperationTypePermisions';
 import BatchNoSelector from '../input-components/batch-no-selector.component';
@@ -56,15 +58,17 @@ const StockItemForm: React.FC<StockItemFormProps> = ({ stockOperationType, stock
   const { useItemCommonNameAsDisplay } = useConfig<ConfigObject>();
 
   const fields = baseSchema.keyof().options;
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      ...stockOperationItem,
-      isOutOfStock: stockOperationItem.isOutOfStock || false,
-      quantity: stockOperationItem.quantity, // Preserve original quantity
+  const form = useForm<z.infer<typeof formSchema> & Pick<ExternalRequisitionExtrafields, 'reasonForRequestedQuantity'>>(
+    {
+      resolver: zodResolver(formSchema),
+      defaultValues: {
+        ...stockOperationItem,
+        isOutOfStock: stockOperationItem.isOutOfStock || false,
+        quantity: stockOperationItem.quantity, // Preserve original quantity
+      },
+      mode: 'all',
     },
-    mode: 'all',
-  });
+  );
   const { t } = useTranslation();
   const { item } = useStockItem(form.getValues('stockItemUuid'));
 
@@ -337,6 +341,31 @@ const StockItemForm: React.FC<StockItemFormProps> = ({ stockOperationType, stock
                   invalidText={error?.message}
                   id={`purchaseprice`}
                   placeholder={t('purchasePrice', 'Purchase Price')}
+                />
+              )}
+            />
+          </Column>
+        )}
+
+        {operationTypePermision.requirePriority && (
+          <Column>
+            <Controller
+              control={form.control}
+              name="reasonForRequestedQuantity"
+              render={({ field, fieldState: { error } }) => (
+                <TextArea
+                  {...field}
+                  readOnly={field.disabled}
+                  disabled={false}
+                  maxCount={250}
+                  onChange={(e: ChangeEvent<HTMLTextAreaElement>) => {
+                    field.onChange(e.target.value);
+                  }}
+                  placeholder={t('enterReson', 'Enter reason') + ' ...'}
+                  id={'reason'}
+                  labelText={t('reasonForRequestedQuantity', 'Order Reason')}
+                  invalid={error?.message}
+                  invalidText={error?.message}
                 />
               )}
             />

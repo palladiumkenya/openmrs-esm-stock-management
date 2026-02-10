@@ -21,6 +21,7 @@ import {
   getStockOperationItemFormSchema,
   getStockOperationItemBaseSchema,
   type StockOperationItemDtoSchema,
+  type ExternalRequisitionExtrafields,
 } from '../validation-schema';
 import useOperationTypePermisions from './hooks/useOperationTypePermisions';
 import BaseOperationDetailsFormStep from './steps/base-operation-details-form-step';
@@ -78,7 +79,7 @@ const StockOperationForm: React.FC<StockOperationFormProps> = ({
   const { autoPopulateResponsiblePerson } = useConfig<ConfigObject>();
   const { error, items: _stockOperation, isLoading } = useStockOperationAndItems(stockRequisitionUuid);
 
-  const form = useForm<StockOperationItemDtoSchema>({
+  const form = useForm<StockOperationItemDtoSchema & Pick<ExternalRequisitionExtrafields, 'requestType'>>({
     defaultValues: {
       responsiblePersonUuid:
         stockOperation?.responsiblePersonUuid ?? // if person uuid exist, make it default
@@ -99,6 +100,7 @@ const StockOperationForm: React.FC<StockOperationFormProps> = ({
         ) ?? [],
       sourceUuid: stockOperation?.sourceUuid ?? '',
       destinationUuid: stockOperation?.destinationUuid ?? '',
+      requestType: operationTypePermision.requirePriority ? 'ROUTINE' : undefined,
     },
     mode: 'all',
     values: stockRequisitionUuid

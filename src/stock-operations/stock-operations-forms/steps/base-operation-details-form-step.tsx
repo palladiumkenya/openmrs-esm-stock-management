@@ -8,6 +8,7 @@ import {
   Stack,
   TextArea,
   TextInput,
+  Dropdown,
 } from '@carbon/react';
 import { ArrowRight } from '@carbon/react/icons';
 import { ErrorState } from '@openmrs/esm-framework';
@@ -18,7 +19,7 @@ import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT, MAIN_STORE_LOCATION_TAG
 import { type Party } from '../../../core/api/types/Party';
 import { type StockOperationDTO } from '../../../core/api/types/stockOperation/StockOperationDTO';
 import { OperationType, type StockOperationType } from '../../../core/api/types/stockOperation/StockOperationType';
-import { type StockOperationItemDtoSchema } from '../../validation-schema';
+import { type ExternalRequisitionExtrafields, type StockOperationItemDtoSchema } from '../../validation-schema';
 import useOperationTypePermisions from '../hooks/useOperationTypePermisions';
 import useParties from '../hooks/useParties';
 import StockOperationReasonSelector from '../input-components/stock-operation-reason-selector.component';
@@ -49,7 +50,7 @@ const BaseOperationDetailsFormStep: FC<BaseOperationDetailsFormStepProps> = ({
     sourceTags,
     destinationTags,
   } = useParties(stockOperationType);
-  const form = useFormContext<StockOperationItemDtoSchema>();
+  const form = useFormContext<StockOperationItemDtoSchema & Pick<ExternalRequisitionExtrafields, 'requestType'>>();
   const isStockIssueOperation = useMemo(
     () => OperationType.STOCK_ISSUE_OPERATION_TYPE === stockOperationType.operationType,
     [stockOperationType],
@@ -231,6 +232,28 @@ const BaseOperationDetailsFormStep: FC<BaseOperationDetailsFormStepProps> = ({
             adjustmentType={stockOperationType?.adjustmentType}
           />
         </Column>
+      )}
+      {operationTypePermision.requirePriority && (
+        <Controller
+          control={form.control}
+          name="requestType"
+          render={({ field, fieldState }) => (
+            <Dropdown<ExternalRequisitionExtrafields['requestType']>
+              {...field}
+              id="requestType"
+              invalidText={fieldState?.error?.message}
+              itemToString={(item: ExternalRequisitionExtrafields['requestType']) =>
+                item === 'EMERGENCY' ? 'Emergency' : item === 'ROUTINE' ? 'Routine' : ''
+              }
+              initialSelectedItem={field.value}
+              onChange={({ selectedItem }) => field.onChange(selectedItem)}
+              items={['EMERGENCY', 'ROUTINE']}
+              label={t('requestType', 'Request Type')}
+              titleText={t('requestType', 'Request Type')}
+              type="default"
+            />
+          )}
+        />
       )}
       <Column>
         <Controller

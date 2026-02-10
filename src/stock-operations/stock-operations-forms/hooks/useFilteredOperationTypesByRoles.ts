@@ -1,5 +1,10 @@
 import { useMemo } from 'react';
-import { useStockOperationTypes, useUserRoles } from '../../../stock-lookups/stock-lookups.resource';
+import {
+  useIsSessionLocationMainStore,
+  useStockOperationTypes,
+  useUserRoles,
+} from '../../../stock-lookups/stock-lookups.resource';
+import { EXTERNAL_REQUISITION_UUID, REQUISITION_UUID } from '../../../constants';
 
 const useFilteredOperationTypesByRoles = () => {
   const {
@@ -7,6 +12,11 @@ const useFilteredOperationTypesByRoles = () => {
     isLoading: isStockOperationTypesLoading,
     error: stockOperationTypesError,
   } = useStockOperationTypes();
+  const {
+    error: sessionLocationError,
+    isLoading: isLoadingSessionLoacation,
+    isMainstore,
+  } = useIsSessionLocationMainStore();
 
   const { userRoles, isLoading: isUserRolesLoading, error: userRolesError } = useUserRoles();
 
@@ -14,16 +24,21 @@ const useFilteredOperationTypesByRoles = () => {
     const applicablePrivilegeScopes = userRoles?.operationTypes?.map((p) => p.operationTypeUuid) || [];
     const uniqueApplicablePrivilegeScopes = [...new Set(applicablePrivilegeScopes)];
 
-    return results?.filter((p) => uniqueApplicablePrivilegeScopes.includes(p.uuid)) || [];
-  }, [results, userRoles]);
+    const operations = results?.filter((p) => uniqueApplicablePrivilegeScopes.includes(p.uuid)) || [];
+    if (isMainstore) {
+      return operations.filter((op) => op.uuid !== REQUISITION_UUID);
+    } else {
+      return operations.filter((op) => op.uuid !== EXTERNAL_REQUISITION_UUID);
+    }
+  }, [results, userRoles, isMainstore]);
 
   const isLoading = isStockOperationTypesLoading || isUserRolesLoading;
   const error = stockOperationTypesError || userRolesError;
 
   return {
     operationTypes,
-    isLoading,
-    error,
+    isLoading: isLoading || isLoadingSessionLoacation,
+    error: error ?? sessionLocationError,
   };
 };
 

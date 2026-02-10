@@ -29,6 +29,7 @@ export enum OperationType {
   STOCK_ISSUE_OPERATION_TYPE = 'stockissue',
   STOCK_TAKE_OPERATION_TYPE = 'stocktake',
   REQUISITION_OPERATION_TYPE = 'requisition',
+  EXTERNAL_REQUISITION_OPERATION_TYPE = 'externalrequisition',
   OPENING_STOCK_OPERATION_TYPE = 'initial',
   RECEIPT_OPERATION_TYPE = 'receipt',
   RETURN_OPERATION_TYPE = 'return',
@@ -46,6 +47,8 @@ export function operationFromString(str: string): OperationType | undefined {
   if (str === OperationType.RETURN_OPERATION_TYPE) return OperationType.RETURN_OPERATION_TYPE;
   if (str === OperationType.ADJUSTMENT_OPERATION_TYPE) return OperationType.ADJUSTMENT_OPERATION_TYPE;
   if (str === OperationType.OPENING_STOCK_OPERATION_TYPE) return OperationType.OPENING_STOCK_OPERATION_TYPE;
+  if (str === OperationType.EXTERNAL_REQUISITION_OPERATION_TYPE)
+    return OperationType.EXTERNAL_REQUISITION_OPERATION_TYPE;
 }
 
 export const StockOperationTypeRequiresStockAdjustmentReason = (operationType: OperationType) => {
@@ -63,7 +66,8 @@ export const StockOperationTypeIsNegativeQtyAllowed = (operationType: OperationT
 export const StockOperationTypeRequiresBatchUuid = (operationType: OperationType) => {
   return (
     !StockOperationTypeRequiresActualBatchInformation(operationType) &&
-    operationType !== OperationType.REQUISITION_OPERATION_TYPE
+    operationType !== OperationType.REQUISITION_OPERATION_TYPE &&
+    operationType !== OperationType.EXTERNAL_REQUISITION_OPERATION_TYPE
   );
 };
 
@@ -75,7 +79,10 @@ export const StockOperationTypeRequiresActualBatchInformation = (operationType: 
 };
 
 export const StockOperationTypeIsQuantityOptional = (operationType: OperationType) => {
-  return operationType === OperationType.REQUISITION_OPERATION_TYPE;
+  return (
+    operationType === OperationType.REQUISITION_OPERATION_TYPE ||
+    operationType === OperationType.EXTERNAL_REQUISITION_OPERATION_TYPE
+  );
 };
 
 export const StockOperationTypeCanCapturePurchasePrice = (operationType: OperationType) => {

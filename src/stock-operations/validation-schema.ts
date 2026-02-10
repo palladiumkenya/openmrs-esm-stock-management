@@ -192,6 +192,15 @@ export const getStockOperationItemFormSchema = (operationType: OperationType) =>
         expiration: true,
         purchasePrice: true,
       });
+    case OperationType.EXTERNAL_REQUISITION_OPERATION_TYPE:
+      return baseStockOperationItemSchema
+        .omit({
+          batchNo: true,
+          stockBatchUuid: true,
+          expiration: true,
+          purchasePrice: true,
+        })
+        .merge(externalRequisitionExtraFieldsSchema.pick({ reasonForRequestedQuantity: true }));
     case OperationType.ADJUSTMENT_OPERATION_TYPE:
       return baseStockOperationItemSchema
         .omit({
@@ -285,6 +294,13 @@ export const stockOperationItemDtoSchema = z.object({
   requisitionStockOperationUuid: z.string().uuid().optional(), // Suplied only for stock issue operation
 });
 
+export const externalRequisitionExtraFieldsSchema = z.object({
+  requestType: z.enum(['EMERGENCY', 'ROUTINE']),
+  reasonForRequestedQuantity: z.string().min(1, { message: 'Required' }),
+});
+
+export type ExternalRequisitionExtrafields = z.infer<typeof externalRequisitionExtraFieldsSchema>;
+
 export type StockOperationItemDtoSchema = z.infer<typeof stockOperationItemDtoSchema>;
 
 export type StockOperationFormData = z.infer<typeof stockOperationSchema>;
@@ -341,5 +357,19 @@ export const getStockOperationFormSchema = (operation: OperationType): z.Schema 
             .nonempty('You must add atleast one stock item'),
         }),
       );
+    case OperationType.EXTERNAL_REQUISITION_OPERATION_TYPE:
+      return stockOperationItemDtoSchema
+        .omit({ reasonUuid: true })
+        .merge(
+          z.object({
+            sourceUuid: z.string({ required_error: 'Source Required' }).min(1, {
+              message: 'Source Required',
+            }),
+            stockOperationItems: getStockOperationItemFormSchema(operation)
+              .array()
+              .nonempty('You must add atleast one stock item'),
+          }),
+        )
+        .merge(externalRequisitionExtraFieldsSchema.pick({ requestType: true }));
   }
 };
