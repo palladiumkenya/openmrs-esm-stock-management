@@ -93,6 +93,8 @@ export const PRINT_LOGO = 'moduleResources/stockmanagement/assets/print-logo.svg
 export const PRINT_LOGO_TEXT = 'Ministry of Health';
 
 export const MAIN_STORE_LOCATION_TAG = 'Main Store';
+export const EXTERNAL_REQUISITION_UUID = '865d709e-cb34-4643-82ee-362073872e37';
+export const REQUISITION_UUID = '77777777-7777-7777-7777-777777777777';
 export const BASE_OPENMRS_APP_URL = '/openmrs/';
 
 export const STOCKMGMT_RESOURCE_URL = '/openmrs/stockmanagement/spa.page/';

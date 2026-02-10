@@ -1,5 +1,6 @@
 import {
   operationFromString,
+  OperationType,
   type StockOperationType,
   StockOperationTypeCanCapturePurchasePrice,
   StockOperationTypeHasPrint,
@@ -23,6 +24,7 @@ const useOperationTypePermisions = (stockoperationType: StockOperationType) => {
     requiresDispatchAcknowledgement: StockOperationTypeRequiresDispatchAcknowledgement(opType),
     allowExpiredBatchNumbers: stockoperationType?.allowExpiredBatchNumbers ?? false,
     allowPrinting: StockOperationTypeHasPrint(opType),
+    requirePriority: opType === OperationType.EXTERNAL_REQUISITION_OPERATION_TYPE,
   };
 };
 
