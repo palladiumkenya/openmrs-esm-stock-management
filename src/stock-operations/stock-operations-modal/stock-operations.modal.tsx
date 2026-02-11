@@ -1,29 +1,50 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Form, InlineLoading, ModalBody, ModalFooter, ModalHeader, TextArea } from '@carbon/react';
-import { getCoreTranslation, restBaseUrl, showSnackbar } from '@openmrs/esm-framework';
+import { ErrorState, getCoreTranslation, restBaseUrl, showSnackbar } from '@openmrs/esm-framework';
 import { type StockOperationDTO } from '../../core/api/types/stockOperation/StockOperationDTO';
 import {
   type StopOperationAction,
   type StopOperationActionType,
 } from '../../core/api/types/stockOperation/StockOperationAction';
-import { executeStockOperationAction } from '../stock-operations.resource';
+import {
+  executeStockOperationAction,
+  submitExternalRequisition,
+  useFacilityCode,
+  useProgramCodeAndProcessingPeriod,
+} from '../stock-operations.resource';
 import { extractErrorMessagesFromResponse } from '../../constants';
 import { handleMutate } from '../../utils';
 import styles from './stock-operations.scss';
+import { OperationType } from '../../core/api/types/stockOperation/StockOperationType';
+import dayjs from 'dayjs';
 
 interface StockOperationsModalProps {
   title: string;
   requireReason: boolean;
   operation: StockOperationDTO;
+  operationType: OperationType;
   closeModal: () => void;
 }
 
-const StockOperationsModal: React.FC<StockOperationsModalProps> = ({ title, requireReason, operation, closeModal }) => {
+const StockOperationsModal: React.FC<StockOperationsModalProps> = ({
+  title,
+  requireReason,
+  operation,
+  closeModal,
+  operationType,
+}) => {
   const confirmType = title.toLocaleLowerCase().trim();
   const { t } = useTranslation();
   const [notes, setNotes] = useState('');
   const [isApproving, setIsApproving] = useState(false);
+  const { error, facilityCode, isLoading } = useFacilityCode();
+  const {
+    error: periodOrProgramError,
+    isLoading: isLoadingProgramAndPeriod,
+    processingPeriod,
+    programCode,
+  } = useProgramCodeAndProcessingPeriod();
 
   const handleClick = async (event) => {
     event.preventDefault();
@@ -54,6 +75,7 @@ const StockOperationsModal: React.FC<StockOperationsModalProps> = ({ title, requ
       case 'return':
         actionName = 'RETURN';
         break;
+      case 'authorize':
       case 'approve':
         actionName = 'APPROVE';
         break;
@@ -72,35 +94,83 @@ const StockOperationsModal: React.FC<StockOperationsModalProps> = ({ title, requ
       reason: notes,
     };
 
-    // submit action
-    executeStockOperationAction(payload).then(
-      () => {
-        setIsApproving(false);
-        showSnackbar({
-          title: t('operationSuccessTitle', '{{title}} Operation', { title }),
-          subtitle: t('operationSuccessful', 'You have successfully {{title}} operation', {
-            title,
-          }),
-          kind: 'success',
+    try {
+      if (operationType === OperationType.EXTERNAL_REQUISITION_OPERATION_TYPE) {
+        await submitExternalRequisition({
+          sourceOrderId: operation.operationNumber,
+          rnrId: operation.uuid,
+          facilityCode: facilityCode,
+          programCode,
+          periodId: processingPeriod,
+          clientSubmitedTime: dayjs().toISOString(),
+          sourceApplication: 'KenyaEMR',
+          emergency: operation.requestType === 'EMERGENCY' ? true : false,
+          status: 'AUTHORIZED',
+          products: operation.stockOperationItems.map((item) => ({
+            productCode: item.etcdProductId,
+            quantityDispensed: 805,
+            quantityReceived: 942,
+            beginningBalance: 81,
+            stockInHand: 216,
+            stockOutDays: 0,
+            lossesAndAdjustments: [
+              {
+                quantity: 2,
+                typeCode: 'EXP',
+                typeName: 'Expired',
+              },
+            ],
+
+            quantityRequested: item.quantity,
+            reasonForRequestedQuantity: item.reasonForRequestedQuantity,
+          })),
+        });
+      }
+      // submit action
+      await executeStockOperationAction(payload);
+      showSnackbar({
+        title: t('operationSuccessTitle', '{{title}} Operation', { title }),
+        subtitle: t('operationSuccessful', 'You have successfully {{title}} operation', {
+          title,
         }),
-          closeModal();
-        handleMutate(`${restBaseUrl}/stockmanagement/stockoperation`);
-      },
-      (err) => {
-        setIsApproving(false);
-        const errorMessages = extractErrorMessagesFromResponse(err);
-        const message = errorMessages[0].replace(/[[\]]/g, '');
-        showSnackbar({
-          title: t('stockOperationErrorTitle', 'Error on saving form'),
-          subtitle: t('stockOperationErrorDescription', 'Details: {{message}}', {
-            message,
-          }),
-          kind: 'error',
+        kind: 'success',
+      }),
+        closeModal();
+      handleMutate(`${restBaseUrl}/stockmanagement/stockoperation`);
+    } catch (err) {
+      setIsApproving(false);
+      const errorMessages = extractErrorMessagesFromResponse(err);
+      const message = errorMessages[0].replace(/[[\]]/g, '');
+      showSnackbar({
+        title: t('stockOperationErrorTitle', 'Error on saving form'),
+        subtitle: t('stockOperationErrorDescription', 'Details: {{message}}', {
+          message,
         }),
-          closeModal();
-      },
-    );
+        kind: 'error',
+      });
+      closeModal();
+    } finally {
+      setIsApproving(false);
+    }
   };
+
+  if (isLoading || isLoadingProgramAndPeriod)
+    return (
+      <div>
+        <ModalHeader closeModal={closeModal} title={t('operationModalTitle', '{{title}} Operation', { title })} />
+        <ModalBody>
+          <InlineLoading />
+        </ModalBody>
+      </div>
+    );
+
+  if (error || periodOrProgramError)
+    return (
+      <ErrorState
+        headerTitle={t('errorFetchingFacilityCode', 'Error retreiving facility code')}
+        error={error ?? periodOrProgramError}
+      />
+    );
 
   return (
     <div>
@@ -109,7 +179,9 @@ const StockOperationsModal: React.FC<StockOperationsModalProps> = ({ title, requ
         <ModalBody>
           <div className={styles.modalBody}>
             <section className={styles.section}>
-              <h5 className={styles.section}>Would you really like to {title} the operation ?</h5>
+              <h5 className={styles.section}>
+                {t('confirmationMessage', 'Would you really like to {{title}} the operation ?', { title })}
+              </h5>
             </section>
             <br />
             {requireReason && (

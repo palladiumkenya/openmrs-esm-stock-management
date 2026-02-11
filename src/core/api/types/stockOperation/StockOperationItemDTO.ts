@@ -26,4 +26,6 @@ export interface StockOperationItemDTO {
   quantityRequestedPackagingUOMName?: string | null | undefined;
   commonName?: string | null | undefined;
   acronym?: string | null | undefined;
+  etcdProductId?: string | null | undefined;
+  reasonForRequestedQuantity?: string | null | undefined;
 }

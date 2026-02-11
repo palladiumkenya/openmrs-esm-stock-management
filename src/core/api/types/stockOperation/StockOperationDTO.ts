@@ -61,4 +61,5 @@ export interface StockOperationDTO {
   dispatchedByFamilyName: string | null | undefined;
   dispatchedDate: Date;
   requisitionStockOperationUuid: string;
+  requestType: 'EMERGENCY' | 'REGULAR' | null | undefined;
 }
