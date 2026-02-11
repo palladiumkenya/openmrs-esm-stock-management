@@ -40,7 +40,7 @@ const StockoperationActions: React.FC<Props> = ({ stockOperation, stockOperation
             {!stockOperation.permission?.canEdit && stockOperation.permission?.canApprove && (
               <>
                 {!operationTypePermision.requiresDispatchAcknowledgement && (
-                  <StockOperationApprovalButton operation={stockOperation} />
+                  <StockOperationApprovalButton operation={stockOperation} operationType={operationType} />
                 )}
 
                 {operationTypePermision.requiresDispatchAcknowledgement && (

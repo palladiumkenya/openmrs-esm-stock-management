@@ -3,7 +3,10 @@ import useSWR from 'swr';
 import { type ResourceFilterCriteria, toQueryParams } from '../core/api/api';
 import { type PageableResult } from '../core/api/types/PageableResult';
 import { type InventoryGroupBy } from '../core/api/types/stockItem/StockItem';
-import { type StopOperationAction } from '../core/api/types/stockOperation/StockOperationAction';
+import {
+  type ExternalRequisitionPayload,
+  type StopOperationAction,
+} from '../core/api/types/stockOperation/StockOperationAction';
 import { type StockOperationDTO } from '../core/api/types/stockOperation/StockOperationDTO';
 import { type StockOperationItemDtoSchema } from './validation-schema';
 import { type StockOperationItemCost } from '../core/api/types/stockOperation/StockOperationItemCost';
@@ -165,6 +168,64 @@ export function executeStockOperationAction(item: StopOperationAction) {
     },
     signal: abortController.signal,
     body: item,
+  });
+}
+
+export function useFacilityCode() {
+  const apiUrl = `${restBaseUrl}/kenyaemr/facility-registry-code`;
+  const { data, isLoading, error } = useSWR(apiUrl, async (_) => {
+    const res = await openmrsFetch(apiUrl);
+    const facilityCode = await res.text();
+    return facilityCode;
+  });
+
+  return {
+    facilityCode: data,
+    isLoading,
+    error,
+  };
+}
+
+export const useProgramCode = () => {
+  const url = `${restBaseUrl}/kenyaemr/nlmis/programs`;
+  const { data, error, isLoading } = useSWR<FetchResponse<Array<{ id: string; code?: string }>>>(url, openmrsFetch);
+  return {
+    isLoading,
+    error,
+    programCode: data?.data?.[0]?.code,
+  };
+};
+
+export const useProcessingPeriod = () => {
+  const url = `${restBaseUrl}/kenyaemr/nlmis/processing-periods`;
+  const { data, error, isLoading } = useSWR<FetchResponse<{ content: Array<{ id: string }> }>>(url, openmrsFetch);
+  return {
+    isLoading,
+    error,
+    processingPeriod: data?.data?.content?.[0]?.id,
+  };
+};
+
+export const useProgramCodeAndProcessingPeriod = () => {
+  const { error: programError, isLoading: isLoadingProgramCode, programCode } = useProgramCode();
+  const { error: periodError, isLoading: isLoadingPeriod, processingPeriod } = useProcessingPeriod();
+  return {
+    isLoading: isLoadingPeriod || isLoadingProgramCode,
+    error: periodError ?? programError,
+    processingPeriod,
+    programCode,
+  };
+};
+export function submitExternalRequisition(payload: ExternalRequisitionPayload) {
+  const apiUrl = `${restBaseUrl}/kenyaemr/hmis-requisition/submit`;
+  const abortController = new AbortController();
+  return openmrsFetch(apiUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    signal: abortController.signal,
+    body: payload,
   });
 }
 

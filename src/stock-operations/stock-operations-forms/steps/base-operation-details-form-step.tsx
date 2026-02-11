@@ -243,11 +243,11 @@ const BaseOperationDetailsFormStep: FC<BaseOperationDetailsFormStepProps> = ({
               id="requestType"
               invalidText={fieldState?.error?.message}
               itemToString={(item: ExternalRequisitionExtrafields['requestType']) =>
-                item === 'EMERGENCY' ? 'Emergency' : item === 'ROUTINE' ? 'Routine' : ''
+                item === 'EMERGENCY' ? t('emergency', 'Emergency') : item === 'REGULAR' ? t('regular', 'Regular') : ''
               }
               initialSelectedItem={field.value}
               onChange={({ selectedItem }) => field.onChange(selectedItem)}
-              items={['EMERGENCY', 'ROUTINE']}
+              items={['EMERGENCY', 'REGULAR']}
               label={t('requestType', 'Request Type')}
               titleText={t('requestType', 'Request Type')}
               type="default"

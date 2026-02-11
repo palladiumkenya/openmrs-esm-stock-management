@@ -295,7 +295,7 @@ export const stockOperationItemDtoSchema = z.object({
 });
 
 export const externalRequisitionExtraFieldsSchema = z.object({
-  requestType: z.enum(['EMERGENCY', 'ROUTINE']),
+  requestType: z.enum(['EMERGENCY', 'REGULAR']),
   reasonForRequestedQuantity: z.string().min(1, { message: 'Required' }),
 });
 

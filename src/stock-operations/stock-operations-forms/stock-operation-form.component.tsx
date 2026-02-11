@@ -100,7 +100,7 @@ const StockOperationForm: React.FC<StockOperationFormProps> = ({
         ) ?? [],
       sourceUuid: stockOperation?.sourceUuid ?? '',
       destinationUuid: stockOperation?.destinationUuid ?? '',
-      requestType: operationTypePermision.requirePriority ? 'ROUTINE' : undefined,
+      requestType: operationTypePermision.requirePriority ? 'REGULAR' : undefined,
     },
     mode: 'all',
     values: stockRequisitionUuid
